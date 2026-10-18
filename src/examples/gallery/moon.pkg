@@ -1,0 +1,6 @@
+import {
+  "sayoi7799/moon_rough",
+  "sayoi7799/moon_rough/jsmath",
+}
+
+pkgtype(kind: "executable")

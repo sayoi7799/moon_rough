@@ -1,0 +1,48 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "sayoi7799/moon_rough"
+
+import {
+  "sayoi7799/moon_rough/core",
+  "sayoi7799/moon_rough/path_data",
+  "sayoi7799/moon_rough/random",
+}
+
+// Values
+pub fn drawable_to_svg(@core.Drawable) -> String
+
+pub fn generator(options? : @core.Options, source? : @random.RandomSource) -> @core.Generator
+
+pub fn ops_to_path(@core.OpSet, fixed_decimals? : Int) -> String
+
+pub fn svg_document(Double, Double, String, background? : String) -> String
+
+// Errors
+
+// Types and methods
+
+// Type aliases
+pub using @core {type Drawable}
+
+pub using @core {type FillStyle}
+
+pub using @core {type Generator}
+
+pub using @core {type Op}
+
+pub using @core {type OpSet}
+
+pub using @core {type OpSetType}
+
+pub using @core {type Options}
+
+pub using @path_data {type PathError}
+
+pub using @core {type PathInfo}
+
+pub using @random {type RandomSource}
+
+pub using @core {type ResolvedOptions}
+
+pub using @core {type Shape}
+
+// Traits

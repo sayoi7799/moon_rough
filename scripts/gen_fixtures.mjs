@@ -924,6 +924,37 @@ generators.push({
   },
 });
 
+// --- svg: opsToPath number formatting -----------------------------------------
+
+generators.push({
+  name: 'svg',
+  run() {
+    // Only the formatting is under test here: the op data are given as bits.
+    const rng = inputRng(5150);
+    const gen = rough.generator();
+    const value = () => {
+      switch (Math.floor(rng() * 6)) {
+        case 0: return Math.round((rng() - 0.5) * 1000);
+        case 1: return (rng() - 0.5) * 1e-6;
+        case 2: return (rng() - 0.5) * 1e22;
+        case 3: return -0;
+        default: return (rng() - 0.5) * 2000;
+      }
+    };
+    const items = [];
+    for (let c = 0; c < 300; c++) {
+      const ops = Array.from({ length: 1 + Math.floor(rng() * 6) }, () => {
+        const op = ['move', 'lineTo', 'bcurveTo'][Math.floor(rng() * 3)];
+        return { op, data: Array.from({ length: op === 'bcurveTo' ? 6 : 2 }, value) };
+      });
+      const digits = [undefined, 0, 1, 2, 3, 5, -1][c % 7];
+      const d = gen.opsToPath({ type: 'path', ops }, digits);
+      items.push([encodeSets([{ type: 'path', ops }]), digits === undefined ? '-' : digits, d].join('|'));
+    }
+    writeFixture('svg', 'svg_fixtures_test.mbt', { ops_to_path_fixtures: items });
+  },
+});
+
 function main() {
   const only = process.argv.slice(2);
   for (const { name, run } of generators) {
