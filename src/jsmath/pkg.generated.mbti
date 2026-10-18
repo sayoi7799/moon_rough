@@ -10,6 +10,10 @@ pub fn atan(Double) -> Double
 
 pub fn cos(Double) -> Double
 
+pub fn max(Double, Double) -> Double
+
+pub fn min(Double, Double) -> Double
+
 pub fn number_to_string(Double) -> String
 
 pub fn parse_float(StringView) -> Double

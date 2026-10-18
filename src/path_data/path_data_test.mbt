@@ -94,7 +94,7 @@ test "numbers after Z are an error instead of rough.js' endless loop" {
     try @path_data.parse_path(d) catch {
       e => assert_eq(e, @path_data.NumberAfterClose, msg=d)
     } noraise {
-      _ => fail("expected {d} to raise")
+      _ => fail("expected \{d} to raise")
     }
   }
 }

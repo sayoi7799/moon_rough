@@ -1,0 +1,23 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "sayoi7799/moon_rough/geometry"
+
+import {
+  "moonbitlang/core/debug",
+}
+
+// Values
+pub fn line_length(Point, Point) -> Double
+
+// Errors
+
+// Types and methods
+pub(all) struct Point {
+  mut x : Double
+  mut y : Double
+} derive(@debug.Debug)
+pub fn Point::copy(Self) -> Self
+pub fn Point::new(Double, Double) -> Self
+
+// Type aliases
+
+// Traits

@@ -1,0 +1,26 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "sayoi7799/moon_rough/curve"
+
+import {
+  "moonbitlang/core/debug",
+  "sayoi7799/moon_rough/geometry",
+  "sayoi7799/moon_rough/path_data",
+}
+
+// Values
+pub fn curve_to_bezier(Array[@geometry.Point], curve_tightness? : Double) -> Array[@geometry.Point] raise CurveTooShort
+
+pub fn points_on_bezier_curves(Array[@geometry.Point], tolerance? : Double, distance? : Double) -> Array[@geometry.Point]
+
+pub fn points_on_path(StringView, tolerance? : Double, distance? : Double) -> Array[Array[@geometry.Point]] raise @path_data.PathError
+
+pub fn simplify(Array[@geometry.Point], Double) -> Array[@geometry.Point]
+
+// Errors
+pub(all) suberror CurveTooShort derive(@debug.Debug)
+
+// Types and methods
+
+// Type aliases
+
+// Traits

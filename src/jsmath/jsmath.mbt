@@ -126,3 +126,35 @@ pub fn parse_float(s : StringView) -> Double {
     _ => @double.infinity
   }
 }
+
+///|
+/// `Math.min(a, b)`: NaN if either is NaN, and -0 is smaller than +0.
+pub fn min(a : Double, b : Double) -> Double {
+  if a.is_nan() || b.is_nan() {
+    @double.not_a_number
+  } else if a < b {
+    a
+  } else if b < a {
+    b
+  } else if a == 0.0 && a.reinterpret_as_uint64() != 0UL {
+    a // a is -0
+  } else {
+    b
+  }
+}
+
+///|
+/// `Math.max(a, b)`: NaN if either is NaN, and +0 is larger than -0.
+pub fn max(a : Double, b : Double) -> Double {
+  if a.is_nan() || b.is_nan() {
+    @double.not_a_number
+  } else if a > b {
+    a
+  } else if b > a {
+    b
+  } else if a == 0.0 && a.reinterpret_as_uint64() == 0UL {
+    a // a is +0
+  } else {
+    b
+  }
+}

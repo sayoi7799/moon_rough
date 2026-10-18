@@ -235,7 +235,20 @@ generators.push({
     for (let i = 0; i < 500; i++) numbers.push(String(randomBitsDouble(rng)).replace('Infinity', '1e999'));
     const parse = numbers.filter((s) => !s.includes('NaN')).map((s) => `${s}|${hex(parseFloat(s))}`);
 
+    const minMaxInputs = [0, -0, 1, -1, NaN, Infinity, -Infinity, 0.5, 1e-300];
+    for (let i = 0; i < 200; i++) minMaxInputs.push((rng() - 0.5) * 4);
+    const minMax = [];
+    minMaxInputs.forEach((a, i) => {
+      const b = minMaxInputs[(i * 7 + 3) % minMaxInputs.length];
+      minMax.push(hexList([a, b, Math.min(a, b), Math.max(a, b)]));
+      minMax.push(hexList([a, a, Math.min(a, a), Math.max(a, a)]));
+    });
+    // Math.pow(x, 2) === x * x, which rough.js' geometry relies on.
+    const pow2 = angles.concat(fixedInputs).map((x) => hexList([x, Math.pow(x, 2)]));
+
     writeFixture('jsmath', 'jsmath_fixtures_test.mbt', {
+      min_max_fixtures: minMax,
+      pow2_fixtures: pow2,
       trig_fixtures: trig,
       round_fixtures: round,
       to_fixed_fixtures: toFixed,
@@ -350,6 +363,93 @@ generators.push({
         serialize(parsed)].join('|');
     });
     writeFixture('path_data', 'path_data_fixtures_test.mbt', { path_fixtures: items });
+  },
+});
+
+// --- curve: points-on-curve and points-on-path ------------------------------
+
+const { pointsOnBezierCurves, simplify } = await import('points-on-curve');
+const { curveToBezier } = await import('points-on-curve/lib/curve-to-bezier.js');
+const { pointsOnPath } = await import('points-on-path');
+
+const flatPoints = (points) => hexList(points.flatMap((p) => [p[0], p[1]]));
+
+/**
+ * Object identity of each output point: `iK` = the K-th input point itself,
+ * `oK` = the same object as the K-th output point, `n` = a new point.
+ */
+function identity(outputs, inputs = []) {
+  return outputs.map((p, k) => {
+    const i = inputs.indexOf(p);
+    if (i >= 0) return `i${i}`;
+    const o = outputs.indexOf(p);
+    return o < k ? `o${o}` : 'n';
+  }).join(',');
+}
+
+function randomPoints(rng, n, scale = 400) {
+  const pts = [];
+  const mode = rng();
+  for (let i = 0; i < n; i++) {
+    if (mode < 0.08) pts.push([5, 5]); // all coincident
+    else if (mode < 0.16) pts.push([i * 10, i * 5]); // collinear
+    else if (mode < 0.24) pts.push([Math.round((rng() - 0.5) * 20), Math.round((rng() - 0.5) * 20)]);
+    else pts.push([(rng() - 0.5) * scale, (rng() - 0.5) * scale]);
+  }
+  return pts;
+}
+
+const optional = (x) => (x === undefined ? '-' : hex(x));
+
+generators.push({
+  name: 'curve',
+  run() {
+    const rng = inputRng(4242);
+    const bezier = [];
+    for (let c = 0; c < 400; c++) {
+      const input = randomPoints(rng, 1 + 3 * (1 + Math.floor(rng() * 4)));
+      const tolerance = [0.15, 1, 10, 0.5, 0.01][c % 5];
+      const distance = [undefined, 0.5, 1, 2.5, 0, -1][Math.floor(rng() * 6)];
+      const out = pointsOnBezierCurves(input, tolerance, distance);
+      bezier.push([flatPoints(input), hex(tolerance), optional(distance), flatPoints(out),
+        identity(out, input)].join('|'));
+    }
+    const toBezier = [];
+    for (let c = 0; c < 300; c++) {
+      const input = randomPoints(rng, 3 + Math.floor(rng() * 8));
+      const tightness = c % 3 === 0 ? 0 : (rng() - 0.3) * 2;
+      const out = curveToBezier(input, tightness);
+      toBezier.push([flatPoints(input), hex(tightness), flatPoints(out), identity(out, input)].join('|'));
+    }
+    const simplified = [];
+    for (let c = 0; c < 300; c++) {
+      const input = randomPoints(rng, 1 + Math.floor(rng() * 30));
+      const distance = [0.5, 1, 2, 5, 20, 0.01][c % 6];
+      const out = simplify(input, distance);
+      simplified.push([flatPoints(input), hex(distance), flatPoints(out), identity(out, input)].join('|'));
+    }
+    const onPath = [];
+    const paths = [...HANDWRITTEN_PATHS];
+    for (let i = 0; i < 200; i++) paths.push(randomPath(rng));
+    const options = [[1, 0.5], [1, 1], [1, 1.75], [1, 2], [1, 0.4], [undefined, undefined],
+      [0.15, undefined], [1, 0]];
+    paths.forEach((d, n) => {
+      const [tolerance, distance] = options[n % options.length];
+      let sets;
+      try {
+        sets = pointsOnPath(d, tolerance, distance);
+      } catch {
+        return;
+      }
+      onPath.push([d, optional(tolerance), optional(distance), sets.map(flatPoints).join(';'),
+        identity(sets.flat())].join('|'));
+    });
+    writeFixture('curve', 'curve_fixtures_test.mbt', {
+      bezier_fixtures: bezier,
+      curve_to_bezier_fixtures: toBezier,
+      simplify_fixtures: simplified,
+      points_on_path_fixtures: onPath,
+    });
   },
 });
 

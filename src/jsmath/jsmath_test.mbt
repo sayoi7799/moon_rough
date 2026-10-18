@@ -75,3 +75,36 @@ test "parse_float matches parseFloat" {
     )
   }
 }
+
+///|
+test "min and max match Math.min and Math.max, including -0 and NaN" {
+  for entry in min_max_fixtures {
+    let v = @fixture.hex_list(entry)
+    let lo = @jsmath.min(v[0], v[1])
+    let hi = @jsmath.max(v[0], v[1])
+    assert_true(
+      @fixture.same(lo, v[2]) &&
+      (
+        lo.is_nan() ||
+        lo.reinterpret_as_uint64() == v[2].reinterpret_as_uint64()
+      ),
+      msg="min(\{v[0]}, \{v[1]})",
+    )
+    assert_true(
+      @fixture.same(hi, v[3]) &&
+      (
+        hi.is_nan() ||
+        hi.reinterpret_as_uint64() == v[3].reinterpret_as_uint64()
+      ),
+      msg="max(\{v[0]}, \{v[1]})",
+    )
+  }
+}
+
+///|
+test "Math.pow(x, 2) is x * x" {
+  for entry in pow2_fixtures {
+    let v = @fixture.hex_list(entry)
+    assert_true(@fixture.same(v[0] * v[0], v[1]), msg="pow(\{v[0]}, 2)")
+  }
+}
