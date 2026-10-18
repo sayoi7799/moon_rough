@@ -1,0 +1,28 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "sayoi7799/moon_rough/random"
+
+// Values
+pub fn new_seed(RandomSource) -> Int
+
+// Errors
+
+// Types and methods
+pub struct Random {
+  // private fields
+}
+pub fn Random::new(Int, source? : RandomSource) -> Self
+pub fn Random::next(Self) -> Double
+
+pub struct RandomSource {
+  // private fields
+}
+pub fn RandomSource::default() -> Self
+pub fn RandomSource::fallback(Self) -> Double
+pub fn RandomSource::fallback_calls(Self) -> Int
+pub fn RandomSource::new(() -> Double) -> Self
+pub fn RandomSource::park_miller(Int) -> Self
+pub fn RandomSource::seeded_calls(Self) -> Int
+
+// Type aliases
+
+// Traits

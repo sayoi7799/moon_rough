@@ -8,7 +8,7 @@ repository = ""
 
 license = "MIT"
 
-keywords = ["rough", "sketch", "hand-drawn", "svg", "roughjs"]
+keywords = [ "rough", "sketch", "hand-drawn", "svg", "roughjs" ]
 
 description = "A MoonBit port of rough.js 4.6.6: hand-drawn, sketchy shapes rendered to backend-agnostic op sets and SVG."
 

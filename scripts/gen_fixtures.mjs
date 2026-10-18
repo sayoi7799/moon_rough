@@ -17,6 +17,7 @@
 
 import fs from 'node:fs';
 import path from 'node:path';
+import { execSync } from 'node:child_process';
 import { createRequire } from 'node:module';
 import { fileURLToPath } from 'node:url';
 
@@ -128,6 +129,122 @@ export function writeFixture(pkg, file, arrays) {
 
 const generators = [];
 
+/** Park-Miller generator for picking test inputs (not counted). */
+function inputRng(seed) {
+  let s = seed;
+  return () => {
+    s = realImul(48271, s);
+    return ((2 ** 31 - 1) & s) / 2 ** 31;
+  };
+}
+
+/** Doubles from random bit patterns: covers every exponent and subnormals. */
+function randomBitsDouble(rng) {
+  const hi = BigInt(Math.floor(rng() * 2 ** 32));
+  const lo = BigInt(Math.floor(rng() * 2 ** 32));
+  u64[0] = (hi << 32n) | lo;
+  return f64[0];
+}
+
+// --- random: rough.js' Random class (bin/math.js is dependency-free) -------
+
+const { Random: RoughRandom } = await import('roughjs/bin/math.js');
+
+generators.push({
+  name: 'random',
+  run() {
+    // [seed given to the JS Random, the same seed as a MoonBit Int]
+    const seeds = [
+      [1, 1], [2, 2], [7, 7], [42, 42], [12345, 12345], [48271, 48271],
+      [999999937, 999999937], [1 << 30, 1 << 30], [2147483647, 2147483647],
+      [-1, -1], [-12345, -12345], [-2147483648, -2147483648],
+      // cloneOptionsAlterSeed(seed = 2^31 - 1) gives the non-int32 2^31;
+      // Math.imul truncates it to -2^31, which is what MoonBit's Int wraps to.
+      [2147483648, -2147483648],
+    ];
+    const items = seeds.map(([js, mbt]) => {
+      const r = new RoughRandom(js);
+      const values = [];
+      for (let i = 0; i < 1000; i++) values.push(r.next());
+      return `${mbt}|${hexList(values)}`;
+    });
+    // seed 0 falls back to Math.random, i.e. the injected sequence.
+    resetRandom();
+    const r0 = new RoughRandom(0);
+    const fallback = [];
+    for (let i = 0; i < 100; i++) fallback.push(r0.next());
+    writeFixture('random', 'random_fixtures_test.mbt', {
+      random_fixtures: items,
+      fallback_fixtures: [`${FALLBACK_SEED}|${hexList(fallback)}`],
+    });
+  },
+});
+
+// --- jsmath: the JavaScript numeric semantics rough.js relies on -----------
+
+generators.push({
+  name: 'jsmath',
+  run() {
+    const rng = inputRng(20240613);
+    const angles = [0, -0, 1e-300, 1e-9, 0.5, 1, Math.PI / 4, Math.PI / 2, Math.PI,
+      2 * Math.PI, -Math.PI, 100, 1e5, 1e9, 1e22, 1e300, -1e300];
+    for (let i = 0; i < 4000; i++) angles.push((rng() - 0.5) * 20);
+    for (let i = 0; i < 1000; i++) angles.push((rng() - 0.5) * 2e4);
+    for (let i = 0; i < 300; i++) angles.push((rng() - 0.5) * 1e12);
+    for (let i = 0; i < 300; i++) angles.push(randomBitsDouble(rng));
+    const trig = angles.map((x) => hexList([x, Math.sin(x), Math.cos(x), Math.tan(x),
+      Math.atan(x), Math.asin(Math.max(-1, Math.min(1, x / 10))),
+      Math.max(-1, Math.min(1, x / 10))]));
+
+    const roundInputs = [0.5, -0.5, 1.5, -1.5, 2.5, -2.5, 0.49999999999999994,
+      -0.49999999999999994, -0, 0, 4503599627370495.5, 4503599627370497, -4503599627370497,
+      1e300, -1e-300, NaN, Infinity, -Infinity];
+    for (let i = 0; i < 1000; i++) roundInputs.push((rng() - 0.5) * 1000);
+    for (let i = 0; i < 200; i++) roundInputs.push(Math.floor((rng() - 0.5) * 2000) / 2);
+    const round = roundInputs.map((x) => hexList([x, Math.round(x)]));
+
+    const fixedInputs = [0, -0, 0.5, 1.5, 2.5, -2.5, 1.005, 1.45, 8.345, 0.000001,
+      -0.0000001, 123.456, 1e20, 9.999999999999999e20, 1e21, -1e21, 1.7976931348623157e308,
+      5e-324, NaN, Infinity, -Infinity, 0.1 + 0.2, 1 / 3, -2 / 3];
+    for (let i = 0; i < 1500; i++) fixedInputs.push((rng() - 0.5) * 2000);
+    for (let i = 0; i < 500; i++) fixedInputs.push((rng() - 0.5) * 2);
+    for (let i = 0; i < 300; i++) fixedInputs.push(randomBitsDouble(rng));
+    const toFixed = [];
+    fixedInputs.forEach((x, i) => {
+      const digits = [0, 1, 2, 3, 9, 20][i % 6];
+      toFixed.push(`${hex(x)}|${digits}|${x.toFixed(digits)}`);
+      if (i % 3 === 0) toFixed.push(`${hex(x)}|9|${x.toFixed(9)}`);
+    });
+
+    const stringInputs = [0, -0, 1, -1, 0.1, 0.30000000000000004, 1e21, 1e-7, 1e-6,
+      123456789012345680000, 1.5e-7, 5e-324, 1.7976931348623157e308, NaN, Infinity,
+      -Infinity, 2 ** 53, 2 ** 53 + 2, 100, 1e20, 0.000001234];
+    for (let i = 0; i < 2000; i++) stringInputs.push((rng() - 0.5) * 2000);
+    for (let i = 0; i < 2000; i++) stringInputs.push(randomBitsDouble(rng));
+    for (let i = 0; i < 500; i++) stringInputs.push(+((rng() - 0.5) * 2000).toFixed(i % 5));
+    const toStr = stringInputs.map((x) => `${hex(x)}|${String(x)}`);
+
+    // Numbers as path-data-parser's tokenizer matches them.
+    const numbers = ['0', '-0', '+1', '1.', '.5', '-.5', '1e5', '1E-5', '-1.5e+3', '007',
+      '1.7976931348623157e308', '1e309', '4.9e-324', '2e-324', '0.1', '123456789012345678901234567890',
+      '9007199254740993', '0.30000000000000004', '2.2250738585072011e-308'];
+    for (let i = 0; i < 2000; i++) {
+      const x = (rng() - 0.5) * 10 ** Math.floor(rng() * 12 - 4);
+      numbers.push(String(x), x.toFixed(Math.floor(rng() * 8)), x.toExponential(Math.floor(rng() * 17)));
+    }
+    for (let i = 0; i < 500; i++) numbers.push(String(randomBitsDouble(rng)).replace('Infinity', '1e999'));
+    const parse = numbers.filter((s) => !s.includes('NaN')).map((s) => `${s}|${hex(parseFloat(s))}`);
+
+    writeFixture('jsmath', 'jsmath_fixtures_test.mbt', {
+      trig_fixtures: trig,
+      round_fixtures: round,
+      to_fixed_fixtures: toFixed,
+      to_string_fixtures: toStr,
+      parse_float_fixtures: parse,
+    });
+  },
+});
+
 function main() {
   const only = process.argv.slice(2);
   for (const { name, run } of generators) {
@@ -135,6 +252,9 @@ function main() {
     resetRandom();
     run();
   }
+  // Keep the generated files in the canonical layout so that regenerating
+  // fixtures does not show up as formatting churn.
+  execSync('moon fmt', { cwd: ROOT, stdio: 'inherit' });
 }
 
 main();

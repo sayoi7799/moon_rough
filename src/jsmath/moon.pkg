@@ -1,0 +1,17 @@
+import {
+  "moonbitlang/core/math",
+  "moonbitlang/core/double",
+  "moonbitlang/core/bigint",
+  "moonbitlang/core/string",
+}
+
+import {
+  "sayoi7799/moon_rough/internal/fixture",
+} for "test"
+
+options(
+  targets: {
+    "trig_native.mbt": [ "native" ],
+    "trig_portable.mbt": [ "not", "native" ],
+  },
+)

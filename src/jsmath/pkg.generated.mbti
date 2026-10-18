@@ -1,0 +1,31 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "sayoi7799/moon_rough/jsmath"
+
+// Values
+pub const PI : Double = 3.141592653589793
+
+pub fn asin(Double) -> Double
+
+pub fn atan(Double) -> Double
+
+pub fn cos(Double) -> Double
+
+pub fn number_to_string(Double) -> String
+
+pub fn parse_float(StringView) -> Double
+
+pub fn round(Double) -> Double
+
+pub fn sin(Double) -> Double
+
+pub fn tan(Double) -> Double
+
+pub fn to_fixed(Double, Int) -> String
+
+// Errors
+
+// Types and methods
+
+// Type aliases
+
+// Traits

@@ -1,0 +1,8 @@
+import {
+  "moonbitlang/core/random" @core_random,
+}
+
+import {
+  "sayoi7799/moon_rough/internal/fixture",
+  "moonbitlang/core/string",
+} for "test"
