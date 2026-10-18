@@ -615,6 +615,7 @@ function drawableCase({ shape, args, options, config }) {
   try {
     drawable = callShape(gen, shape, structuredClone(args), options && { ...options });
   } catch (e) {
+    if (shape !== 'path') throw e; // only path data may be rejected
     return [...head, 'error', errorTag(e)].join('|');
   }
   const { seeded, fallback } = randomCounts();
@@ -749,6 +750,177 @@ generators.push({
     }
     console.log(`core_fills: kept ${kept.length} of ${items.length} cases`);
     writeFixture('core', 'core_fills_fixtures_test.mbt', { fill_fixtures: kept });
+  },
+});
+
+// --- core: random shape x option combinations -----------------------------------
+
+function randomShapeArgs(rng, shape) {
+  const coord = () => Math.round((rng() - 0.3) * 400 * 100) / 100;
+  const size = () => Math.round(rng() * 250 * 10) / 10 + (rng() < 0.05 ? -40 : 0);
+  const pts = (min, max) => {
+    const n = min + Math.floor(rng() * (max - min + 1));
+    return Array.from({ length: n }, () => [coord(), coord()]);
+  };
+  switch (shape) {
+    case 'line': return [coord(), coord(), coord(), coord()];
+    case 'rectangle': case 'ellipse': return [coord(), coord(), size(), size()];
+    case 'circle': return [coord(), coord(), size()];
+    case 'linearPath': return pts(2, 8);
+    case 'polygon': return pts(3, 9);
+    case 'arc': {
+      const start = (rng() - 0.5) * 4 * Math.PI;
+      const stop = start + 0.05 + rng() * 2.5 * Math.PI;
+      return [coord(), coord(), size(), size(), start, stop, rng() < 0.6 ? 1 : 0];
+    }
+    case 'curve': return pts(2, 8);
+    case 'curves': return Array.from({ length: 1 + Math.floor(rng() * 3) }, () => pts(2, 6));
+    case 'path': return randomPath(rng);
+    default: throw new Error(shape);
+  }
+}
+
+function randomOptions(rng) {
+  const o = {};
+  const maybe = (p, k, v) => { if (rng() < p) o[k] = v(); };
+  o.seed = rng() < 0.05 ? [2147483647, -1, -2147483648, 1][Math.floor(rng() * 4)]
+    : Math.floor(rng() * 2 ** 31) - (rng() < 0.2 ? 2 ** 30 : 0);
+  maybe(0.7, 'roughness', () => (rng() < 0.15 ? 0 : Math.round(rng() * 300) / 100));
+  maybe(0.5, 'bowing', () => Math.round(rng() * 1000) / 100);
+  maybe(0.5, 'hachureAngle', () => Math.round((rng() - 0.5) * 3600) / 10);
+  maybe(0.5, 'hachureGap', () => (rng() < 0.1 ? -1 : 3 + Math.round(rng() * 170) / 10));
+  maybe(0.3, 'preserveVertices', () => rng() < 0.5);
+  maybe(0.3, 'disableMultiStroke', () => rng() < 0.5);
+  maybe(0.3, 'disableMultiStrokeFill', () => rng() < 0.5);
+  maybe(0.3, 'strokeWidth', () => 0.5 + Math.round(rng() * 40) / 10);
+  maybe(0.2, 'curveStepCount', () => 3 + Math.floor(rng() * 15));
+  maybe(0.2, 'curveFitting', () => 0.5 + Math.round(rng() * 50) / 100);
+  maybe(0.2, 'curveTightness', () => Math.round((rng() - 0.5) * 200) / 100);
+  maybe(0.2, 'maxRandomnessOffset', () => Math.round(rng() * 60) / 10);
+  maybe(0.2, 'fillWeight', () => Math.round(rng() * 40) / 10);
+  maybe(0.2, 'dashOffset', () => 1 + Math.round(rng() * 100) / 10);
+  maybe(0.2, 'dashGap', () => 1 + Math.round(rng() * 100) / 10);
+  maybe(0.2, 'zigzagOffset', () => 1 + Math.round(rng() * 80) / 10);
+  maybe(0.15, 'simplification', () => Math.round(rng() * 120) / 100);
+  maybe(0.15, 'fillShapeRoughnessGain', () => Math.round(rng() * 200) / 100);
+  maybe(0.1, 'stroke', () => (rng() < 0.5 ? 'none' : '#123456'));
+  if (rng() < 0.75) {
+    o.fill = ['red', '#00f', 'none', 'transparent', ''][rng() < 0.85 ? 0 : 1 + Math.floor(rng() * 4)];
+    o.fillStyle = FILL_STYLES[Math.floor(rng() * FILL_STYLES.length)];
+  }
+  return o;
+}
+
+generators.push({
+  name: 'core_random',
+  run() {
+    const rng = inputRng(8675309);
+    const items = [];
+    let tries = 0;
+    while (items.length < 600) {
+      tries++;
+      const shape = SHAPES[Math.floor(rng() * SHAPES.length)];
+      const args = randomShapeArgs(rng, shape);
+      const options = randomOptions(rng);
+      const entry = drawableCase({ shape, args, options });
+      if (entry.length <= MAX_CASE) items.push(entry);
+    }
+    console.log(`core_random: ${items.length} cases (${tries - items.length} too large)`);
+    writeFixture('core', 'core_random_fixtures_test.mbt', { random_fixtures: items });
+  },
+});
+
+// --- core: edge cases --------------------------------------------------------
+
+generators.push({
+  name: 'core_edge',
+  run() {
+    const items = [];
+    const fills = [{}, { fill: 'red' }, { fill: 'red', fillStyle: 'solid' },
+      { fill: 'red', fillStyle: 'cross-hatch', hachureGap: 6 }, { fill: 'red', fillStyle: 'dots', hachureGap: 8 }];
+    const add = (shape, args, options) => {
+      fills.forEach((fill, i) => {
+        items.push(drawableCase({ shape, args, options: { seed: 314 + i, ...options, ...fill } }));
+      });
+    };
+    // Zero width / height / length.
+    add('rectangle', [10, 10, 0, 0]);
+    add('rectangle', [10, 10, 0, 50]);
+    add('rectangle', [10, 10, 80, 0]);
+    add('ellipse', [50, 50, 0, 0]);
+    add('ellipse', [50, 50, 0, 40]);
+    add('circle', [50, 50, 0]);
+    add('line', [10, 10, 10, 10]);
+    add('arc', [50, 50, 0, 0, 0, Math.PI, 1]);
+    add('arc', [50, 50, 80, 0, 0, Math.PI, 1]);
+    // roughness 0 on every shape
+    for (const shape of SHAPES) add(shape, SHAPE_ARGS[shape][0], { roughness: 0 });
+    // Degenerate point lists.
+    add('polygon', [[5, 5]]);
+    add('polygon', [[5, 5], [50, 60]]);
+    add('polygon', [[5, 5], [5, 5], [5, 5]]);
+    add('linearPath', [[5, 5]]);
+    add('linearPath', []);
+    add('curve', [[5, 5]]);
+    add('curve', [[5, 5], [60, 40]]);
+    add('curve', []);
+    add('curves', [[[5, 5], [60, 40]], [[70, 70]], [[10, 90], [40, 120], [90, 100]]]);
+    items.push(drawableCase({ shape: 'polygon', args: [], options: { seed: 3 } }));
+    items.push(drawableCase({ shape: 'polygon', args: [], options: { seed: 3, fill: 'red', fillStyle: 'solid' } }));
+    // Paths: empty, move only, relative commands and arcs, invalid data.
+    for (const d of ['', 'M 10 10', 'M 10 10 Z', 'm 10 10 l 20 0 l 0 20 z m 30 0 h 20 v 20 h -20 z',
+      'M 10 10 a 30 20 15 1 1 60 0 a 30 20 15 0 0 -60 0', 'M0 0 A 0 10 0 0 1 20 0 A 10 10 0 0 1 20 0',
+      'M 20 20 c 10 -20 30 -20 40 0 s 30 20 40 0 q 10 -20 20 0 t 20 0 Z',
+      'M 10 10\nL 50 50\nL 90 10', 'M 10 10 L - 50 50 L 90 -  10', 'M10 10 L 50 50 L', 'M 10 10 L Z',
+      'M 10 10 # 20', 'M 10 10 L 50 50/(ss)/gL 90 10']) {
+      add('path', d);
+      add('path', d, { simplification: 0.5 });
+    }
+    // Infinite coordinates (no fill: rough.js' dots filler never ends on them).
+    items.push(drawableCase({ shape: 'path', args: 'M 1e400 10 L 20 20', options: { seed: 8 } }));
+    // Option corner cases.
+    add('ellipse', [60, 60, 100, 80], { curveStepCount: 1 });
+    add('arc', [60, 60, 100, 80, 0, 1, 1], { curveStepCount: 2 });
+    add('rectangle', [10, 10, 80, 60], { maxRandomnessOffset: 0 });
+    add('path', 'M 10 10 C 20 40 60 40 80 10', { maxRandomnessOffset: 0 });
+    add('rectangle', [10, 10, 80, 60], { hachureGap: 0 });
+    add('rectangle', [10, 10, 80, 60], { strokeWidth: 0, hachureGap: -1 });
+    add('rectangle', [10, 10, 80, 60], { fillWeight: 0 });
+    add('curve', [[10, 10], [60, 80], [120, 20]], { seed: 2147483647 });
+    add('curves', [[[10, 10], [60, 80], [120, 20]], [[0, 50], [50, 100], [100, 60]]], { seed: -1 });
+    add('arc', [50, 50, 80, 60, -10, -9, 1]);
+    add('arc', [50, 50, 80, 60, 0, 20, 1]);
+    add('ellipse', [50, 50, 80, 60], { seed: 0 });
+    add('path', 'M 10 10 L 90 90', { roughness: 0, simplification: 0.9 });
+    const keptEdges = items.filter((e) => e.length <= MAX_CASE);
+    for (const e of items) {
+      if (e.length > MAX_CASE) console.log(`core_edge: left out (too large): ${e.split('|').slice(0, 3).join(' ').slice(0, 120)}`);
+    }
+    writeFixture('core', 'core_edge_fixtures_test.mbt', { edge_fixtures: keptEdges });
+
+    // One generator, several calls: without options every call shares (and
+    // advances) the generator's default options, randomizer included; with
+    // options the merged copy inherits the randomizer if it already exists.
+    const sequences = [];
+    const config = { seed: 5, fill: 'red' };
+    const calls = [
+      ['rectangle', [10, 10, 80, 60], undefined], ['line', [0, 0, 100, 50], undefined],
+      ['ellipse', [50, 50, 60, 40], { roughness: 2 }], ['polygon', [[0, 0], [50, 10], [20, 60]], undefined],
+      ['curve', [[0, 0], [40, 50], [80, 0], [120, 50]], { fillStyle: 'zigzag' }],
+      ['circle', [40, 40, 30], undefined],
+    ];
+    for (const cfg of [config, undefined, { seed: 11 }]) {
+      resetRandom();
+      const gen = rough.generator(cfg ? { options: cfg } : undefined);
+      const steps = calls.map(([shape, args, options]) => {
+        const drawable = callShape(gen, shape, structuredClone(args), options && { ...options });
+        const { seeded, fallback } = randomCounts();
+        return [shape, encodeArgs(shape, args), encodeOptions(options), encodeOptions(cfg), 'ok',
+          drawable.shape, encodeSets(drawable.sets), seeded, fallback].join('|');
+      });
+      sequences.push(steps.join('~'));
+    }
+    writeFixture('core', 'core_sequence_fixtures_test.mbt', { sequence_fixtures: sequences });
   },
 });
 

@@ -137,20 +137,42 @@ fn op_code(op : @core.Op) -> String {
 }
 
 ///|
-/// Compares one drawable fixture; returns the number of cases checked.
+/// A generator configured like the fixture's `rough.generator(config)`.
+fn fixture_generator(
+  config : StringView,
+) -> (@core.Generator, @random.RandomSource) raise {
+  let source = @random.RandomSource::park_miller(FALLBACK_SEED)
+  let generator = match decode_options(config) {
+    Some(config) => @core.Generator::new(options=config, source~)
+    None => @core.Generator::new(source~)
+  }
+  (generator, source)
+}
+
+///|
+/// Compares one drawable fixture entry, drawn with a fresh generator.
 fn run_drawable_fixture(
   stats : @fixture.ErrorStats,
   index : Int,
   entry : String,
 ) -> Unit raise {
   let f = @fixture.fields(entry)
+  let (generator, source) = fixture_generator(f[3])
+  check_drawable(stats, "case \{index}", f, generator, source)
+}
+
+///|
+/// Draws the fixture's shape with `generator` and compares the result,
+/// including the random numbers drawn so far from `source`.
+fn check_drawable(
+  stats : @fixture.ErrorStats,
+  name : String,
+  f : Array[StringView],
+  generator : @core.Generator,
+  source : @random.RandomSource,
+) -> Unit raise {
   let shape = f[0]
-  let label = "case \{index} (\{shape} \{f[2]})"
-  let source = @random.RandomSource::park_miller(FALLBACK_SEED)
-  let generator = match decode_options(f[3]) {
-    Some(config) => @core.Generator::new(options=config, source~)
-    None => @core.Generator::new(source~)
-  }
+  let label = "\{name} (\{shape} \{f[2]})"
   let options = decode_options(f[2])
   if f[4] == "error" {
     let tag = try call_shape(generator, shape, f[1], options) catch {
@@ -230,4 +252,31 @@ test "every shape with stroke, solid and hachure fills matches rough.js" {
 ///|
 test "all seven fill styles on every fillable shape match rough.js" {
   run_drawable_fixtures("core fills", fill_fixtures)
+}
+
+///|
+test "500+ random shape and option combinations match rough.js" {
+  assert_true(random_fixtures.length() >= 500)
+  run_drawable_fixtures("core random", random_fixtures)
+}
+
+///|
+test "edge cases match rough.js" {
+  run_drawable_fixtures("core edge cases", edge_fixtures)
+}
+
+///|
+test "calls on one generator share its default options like rough.js" {
+  let stats = @fixture.ErrorStats::new("core sequences")
+  for i, sequence in sequence_fixtures {
+    let steps = sequence.split("~").to_array()
+    let (generator, source) = fixture_generator(
+      @fixture.fields(steps[0].to_owned())[3],
+    )
+    for j, step in steps {
+      let f = @fixture.fields(step.to_owned())
+      check_drawable(stats, "sequence \{i} step \{j}", f, generator, source)
+    }
+  }
+  println(stats.summary())
 }
