@@ -680,6 +680,78 @@ generators.push({
   },
 });
 
+/** Size limit of one drawable fixture entry, to keep the repository small. */
+const MAX_CASE = 60000;
+
+const FILL_STYLES = ['hachure', 'solid', 'zigzag', 'cross-hatch', 'dots', 'dashed', 'zigzag-line'];
+const FILLABLE_SHAPES = ['rectangle', 'ellipse', 'circle', 'polygon', 'arc', 'curve', 'curves', 'path'];
+
+generators.push({
+  name: 'core_fills',
+  run() {
+    const items = [];
+    const variants = [
+      { seed: 1 },
+      { seed: 42, roughness: 2, hachureGap: 6 },
+      { seed: 9, roughness: 0.5, hachureAngle: 30 },
+      { seed: 123, roughness: 0, hachureGap: 10, fillWeight: 2 },
+      { seed: 77, strokeWidth: 2, disableMultiStrokeFill: true },
+      { seed: 3, hachureAngle: -90, dashOffset: 3, dashGap: 2, zigzagOffset: 3 },
+      { seed: 2718, hachureGap: 0.3, roughness: 1.5 },
+      { seed: 5, fill: 'transparent', preserveVertices: true },
+    ];
+    for (const shape of FILLABLE_SHAPES) {
+      SHAPE_ARGS[shape].forEach((args, a) => {
+        // arcs are filled only when closed
+        if (shape === 'arc' && !args[6]) return;
+        FILL_STYLES.forEach((fillStyle, s) => {
+          variants.forEach((variant, v) => {
+            if ((a + s + v) % 3 !== 0) return; // a third of the grid keeps the file small
+            const options = { fill: '#c33', ...variant, fillStyle };
+            // dots draw an ellipse per dot: keep those cases moderate
+            if (fillStyle === 'dots' && !(options.hachureGap >= 6)) options.hachureGap = 12;
+            items.push(drawableCase({ shape, args, options }));
+          });
+        });
+      });
+    }
+    // A compact case for every shape x style, so the size cap below never
+    // removes a combination.
+    const SMALL_ARGS = {
+      rectangle: [10, 10, 40, 30], ellipse: [50, 40, 70, 50], circle: [40, 40, 50],
+      polygon: [[10, 10], [70, 20], [40, 70]], arc: [50, 50, 80, 60, 0.3, 2.5, 1],
+      curve: [[10, 10], [40, 60], [70, 20], [90, 50]],
+      curves: [[[10, 10], [40, 60], [70, 20]], [[10, 60], [50, 90], [90, 70], [95, 95]]],
+      path: 'M 10 10 L 70 15 Q 90 50 60 70 Z',
+    };
+    FILLABLE_SHAPES.forEach((shape, i) => {
+      FILL_STYLES.forEach((fillStyle, j) => {
+        items.push(drawableCase({ shape, args: SMALL_ARGS[shape],
+          options: { seed: 1000 + 10 * i + j, fill: 'green', fillStyle, hachureGap: 8 } }));
+      });
+    });
+    // Every style once with seed 0: all randomness from Math.random.
+    for (const fillStyle of FILL_STYLES) {
+      items.push(drawableCase({ shape: 'rectangle', args: [20, 20, 120, 80],
+        options: { fill: 'red', fillStyle, hachureGap: 12 } }));
+    }
+    // Very dense fills (tiny gaps on large shapes) produce megabytes of ops;
+    // keep the cases below MAX_CASE characters and check that every
+    // shape x fill style combination is still covered.
+    const kept = items.filter((e) => e.length <= MAX_CASE);
+    const combos = new Set(kept.map((e) => {
+      const f = e.split('|');
+      return f[0] + '/' + /fillStyle:s:([a-z-]+)/.exec(f[2])[1];
+    }));
+    if (combos.size !== FILLABLE_SHAPES.length * FILL_STYLES.length) {
+      const all = FILLABLE_SHAPES.flatMap((s) => FILL_STYLES.map((f) => s + "/" + f));
+      throw new Error(`fill coverage: missing ${all.filter((c) => !combos.has(c))}`);
+    }
+    console.log(`core_fills: kept ${kept.length} of ${items.length} cases`);
+    writeFixture('core', 'core_fills_fixtures_test.mbt', { fill_fixtures: kept });
+  },
+});
+
 function main() {
   const only = process.argv.slice(2);
   for (const { name, run } of generators) {
@@ -689,7 +761,7 @@ function main() {
   }
   // Keep the generated files in the canonical layout so that regenerating
   // fixtures does not show up as formatting churn.
-  execSync('moon fmt', { cwd: ROOT, stdio: 'inherit' });
+  if (!process.env.NO_FMT) execSync('moon fmt', { cwd: ROOT, stdio: 'inherit' });
 }
 
 main();

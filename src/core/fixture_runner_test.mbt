@@ -226,3 +226,8 @@ fn run_drawable_fixtures(name : String, fixtures : Array[String]) -> Unit raise 
 test "every shape with stroke, solid and hachure fills matches rough.js" {
   run_drawable_fixtures("core shapes", shape_fixtures)
 }
+
+///|
+test "all seven fill styles on every fillable shape match rough.js" {
+  run_drawable_fixtures("core fills", fill_fixtures)
+}
