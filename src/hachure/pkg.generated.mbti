@@ -1,0 +1,18 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "sayoi7799/moon_rough/hachure"
+
+import {
+  "sayoi7799/moon_rough/geometry",
+}
+
+// Values
+pub fn hachure_lines(Array[Array[@geometry.Point]], Double, Double, hachure_step_offset? : Double) -> Array[(@geometry.Point, @geometry.Point)]
+
+// Errors
+
+// Types and methods
+
+// Type aliases
+pub type Line = (@geometry.Point, @geometry.Point)
+
+// Traits

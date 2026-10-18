@@ -98,9 +98,13 @@ export function mbtString(s) {
   return JSON.stringify(s).replace(/\\u([0-9a-fA-F]{4})/g, '\\u{$1}');
 }
 
+/** Longest string literal written; the compiler limits text segment width. */
+const CHUNK = 2000;
+
 /**
  * Writes `src/<pkg>/<file>` containing `let <name> : Array[String] = [...]`
- * for each entry of `arrays`.
+ * for each entry of `arrays`. Long entries are written as a concatenation of
+ * literals of at most CHUNK characters.
  */
 export function writeFixture(pkg, file, arrays) {
   const lines = [
@@ -111,7 +115,11 @@ export function writeFixture(pkg, file, arrays) {
     lines.push('///|');
     lines.push(`let ${name} : Array[String] = [`);
     for (const item of items) {
-      lines.push(`  ${mbtString(item)},`);
+      const pieces = [];
+      for (let i = 0; i === 0 || i < item.length; i += CHUNK) {
+        pieces.push(mbtString(item.slice(i, i + CHUNK)));
+      }
+      lines.push(`  ${pieces.join(' +\n    ')},`);
     }
     lines.push(']');
     lines.push('');
@@ -450,6 +458,80 @@ generators.push({
       simplify_fixtures: simplified,
       points_on_path_fixtures: onPath,
     });
+  },
+});
+
+// --- hachure: hachure-fill ----------------------------------------------------
+
+const { hachureLines } = await import('hachure-fill');
+
+/** Polygon lists of the shapes rough.js fills, plus degenerate ones. */
+function randomPolygons(rng) {
+  const kind = Math.floor(rng() * 9);
+  const r = (s = 400) => (rng() - 0.5) * s;
+  switch (kind) {
+    case 0: { // rectangle, as rough.js builds it
+      const x = r(), y = r(), w = r(300), h = r(300);
+      return [[[x, y], [x + w, y], [x + w, y + h], [x, y + h]]];
+    }
+    case 1: { // ellipse-like
+      const n = 8 + Math.floor(rng() * 40), cx = r(), cy = r(), rx = rng() * 200, ry = rng() * 200;
+      const pts = [];
+      for (let i = 0; i < n; i++) pts.push([cx + rx * Math.cos(i * 2 * Math.PI / n), cy + ry * Math.sin(i * 2 * Math.PI / n)]);
+      return [pts];
+    }
+    case 2: // integer coordinates: many sort ties
+      return [randomPoints(rng, 3 + Math.floor(rng() * 12)).map(([x, y]) => [Math.round(x / 20), Math.round(y / 20)])];
+    case 3: { // several polygons (holes, overlaps)
+      const list = [];
+      const n = 2 + Math.floor(rng() * 3);
+      for (let i = 0; i < n; i++) list.push(randomPoints(rng, 3 + Math.floor(rng() * 8)));
+      return list;
+    }
+    case 4: { // closed with the very same point object, and a duplicated point
+      const pts = randomPoints(rng, 3 + Math.floor(rng() * 6));
+      pts.push(pts[0]);
+      pts.splice(1, 0, pts[1]);
+      return [pts];
+    }
+    case 5: { // explicitly closed with an equal copy
+      const pts = randomPoints(rng, 3 + Math.floor(rng() * 6));
+      pts.push([...pts[0]]);
+      return [pts];
+    }
+    case 6: // degenerate: one or two points, horizontal only, an empty-ish mix
+      return [[[r(), 5]], [[1, 2], [3, 4]], [[0, 7], [10, 7], [20, 7]]];
+    case 7: { // star (concave, self-touching)
+      const n = 5 + Math.floor(rng() * 6), cx = r(), cy = r();
+      const pts = [];
+      for (let i = 0; i < 2 * n; i++) {
+        const rad = i % 2 ? 40 : 120;
+        pts.push([cx + rad * Math.cos(i * Math.PI / n), cy + rad * Math.sin(i * Math.PI / n)]);
+      }
+      return [pts];
+    }
+    default:
+      return [randomPoints(rng, 3 + Math.floor(rng() * 28))];
+  }
+}
+
+generators.push({
+  name: 'hachure',
+  run() {
+    const rng = inputRng(31337);
+    const items = [];
+    for (let c = 0; c < 600; c++) {
+      const polygons = randomPolygons(rng);
+      const input = polygons.map(flatPoints).join(';');
+      const ids = identity(polygons.flat());
+      const gap = [4, 1, 0.1, 0.05, 0.5, 2.5, 8, 10, 4, 6][c % 10];
+      const angle = [49, 131, 90, 0, -45, 30.25, 180, 360, -90, 49][Math.floor(rng() * 10)];
+      const step = [1, 1, 1, gap, 0.5, 2][Math.floor(rng() * 6)];
+      const lines = hachureLines(polygons, gap, angle, step);
+      items.push([input, ids, hex(gap), hex(angle), hex(step), hexList(lines.flat(2)),
+        polygons.map(flatPoints).join(';')].join('|'));
+    }
+    writeFixture('hachure', 'hachure_fixtures_test.mbt', { hachure_fixtures: items });
   },
 });
 
