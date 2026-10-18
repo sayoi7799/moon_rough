@@ -5,14 +5,18 @@ on:
   pull_request:
 
 jobs:
+  # The toolchain the project is developed and formatted with. `moon fmt`
+  # output changes between releases, so formatting is only checked here.
   test:
     runs-on: ubuntu-latest
+    env:
+      MOONBIT_VERSION: 0.10.14+7d59c7ec9
     steps:
       - uses: actions/checkout@v4
 
-      - name: Install MoonBit
+      - name: Install MoonBit ${{ env.MOONBIT_VERSION }}
         run: |
-          curl -fsSL https://cli.moonbitlang.com/install/unix.sh | bash
+          curl -fsSL https://cli.moonbitlang.com/install/unix.sh | bash -s "$MOONBIT_VERSION"
           echo "$HOME/.moon/bin" >> "$GITHUB_PATH"
 
       - name: Version
@@ -37,3 +41,30 @@ jobs:
         run: |
           moon run src/examples/gallery > gallery.generated.svg
           diff -q gallery.svg gallery.generated.svg
+
+  # Early warning for the latest release; does not fail the workflow.
+  latest:
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install the latest MoonBit
+        run: |
+          curl -fsSL https://cli.moonbitlang.com/install/unix.sh | bash
+          echo "$HOME/.moon/bin" >> "$GITHUB_PATH"
+
+      - name: Version
+        run: moon version --all
+
+      - name: Check
+        run: moon check
+
+      - name: Test (js)
+        run: moon test --target js
+
+      - name: Test (wasm-gc)
+        run: moon test --target wasm-gc
+
+      - name: Test (native)
+        run: moon test --target native

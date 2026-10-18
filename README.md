@@ -146,6 +146,8 @@ moon test --target native
 
 共比较 2,045,923 个值，**三个后端的最大误差都是 0**（moon 0.1.20260920 / moonc v0.10.14，Windows 11，Node 24.20）。
 
+CI 用同一版本的 toolchain（`0.10.14+7d59c7ec9`）跑 check、`moon fmt --check` 和三个后端的测试；不同版本的 `moon fmt` 输出不同，所以格式只按这个版本检查。另有一个不阻塞的任务用最新版 MoonBit 跑 check 和测试，用来提前发现兼容性问题。
+
 ## 重新生成 fixtures
 
 wasm-gc 后端不能读文件，所以 fixtures 生成为 `.mbt` 测试文件，放在被测包旁边（`src/*/…_fixtures_test.mbt`）。双精度数按 IEEE-754 的 16 位十六进制位模式存储，不经过任何十进制解析。
