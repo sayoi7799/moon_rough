@@ -1,5 +1,7 @@
 # moon_rough
 
+[![CI](https://github.com/sayoi7799/moon_rough/actions/workflows/ci.yml/badge.svg)](https://github.com/sayoi7799/moon_rough/actions/workflows/ci.yml)
+
 [rough.js](https://github.com/rough-stuff/rough) 4.6.6 的 MoonBit 移植：把线条、矩形、椭圆、多边形、曲线和 SVG 路径画成手绘草图风格。
 
 ![gallery](gallery.svg)
