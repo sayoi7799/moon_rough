@@ -1,0 +1,15 @@
+import {
+  "sayoi7799/moon_rough/random",
+  "sayoi7799/moon_rough/jsmath",
+  "sayoi7799/moon_rough/geometry",
+  "sayoi7799/moon_rough/path_data",
+  "sayoi7799/moon_rough/curve",
+  "sayoi7799/moon_rough/hachure",
+}
+
+import {
+  "sayoi7799/moon_rough/internal/fixture",
+  "moonbitlang/core/string",
+  "sayoi7799/moon_rough/random",
+  "sayoi7799/moon_rough/path_data",
+} for "test"

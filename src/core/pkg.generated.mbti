@@ -1,0 +1,157 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "sayoi7799/moon_rough/core"
+
+import {
+  "moonbitlang/core/debug",
+  "sayoi7799/moon_rough/path_data",
+  "sayoi7799/moon_rough/random",
+}
+
+// Values
+pub fn ops_to_path(OpSet, fixed_decimals? : Int) -> String
+
+// Errors
+
+// Types and methods
+pub struct Drawable {
+  shape : Shape
+  options : ResolvedOptions
+  sets : Array[OpSet]
+}
+
+pub(all) enum FillStyle {
+  Hachure
+  Solid
+  Zigzag
+  CrossHatch
+  Dots
+  Dashed
+  ZigzagLine
+} derive(Eq, @debug.Debug)
+pub fn FillStyle::from_name(StringView) -> Self
+pub fn FillStyle::name(Self) -> String
+
+pub struct Generator {
+  default_options : ResolvedOptions
+}
+pub fn Generator::arc(Self, Double, Double, Double, Double, Double, Double, closed? : Bool, options? : Options) -> Drawable
+pub fn Generator::circle(Self, Double, Double, Double, options? : Options) -> Drawable
+pub fn Generator::curve(Self, Array[(Double, Double)], options? : Options) -> Drawable
+pub fn Generator::curves(Self, Array[Array[(Double, Double)]], options? : Options) -> Drawable
+pub fn Generator::ellipse(Self, Double, Double, Double, Double, options? : Options) -> Drawable
+pub fn Generator::line(Self, Double, Double, Double, Double, options? : Options) -> Drawable
+pub fn Generator::linear_path(Self, Array[(Double, Double)], options? : Options) -> Drawable
+pub fn Generator::new(options? : Options, source? : @random.RandomSource) -> Self
+pub fn Generator::new_seed(Self) -> Int
+pub fn Generator::ops_to_path(Self, OpSet, fixed_decimals? : Int) -> String
+pub fn Generator::path(Self, StringView, options? : Options) -> Drawable raise @path_data.PathError
+pub fn Generator::polygon(Self, Array[(Double, Double)], options? : Options) -> Drawable
+pub fn Generator::rectangle(Self, Double, Double, Double, Double, options? : Options) -> Drawable
+pub fn Generator::to_paths(Self, Drawable) -> Array[PathInfo]
+
+pub(all) enum Op {
+  Move(Double, Double)
+  LineTo(Double, Double)
+  BCurveTo(Double, Double, Double, Double, Double, Double)
+} derive(Eq, @debug.Debug)
+pub fn Op::data(Self) -> Array[Double]
+pub fn Op::name(Self) -> String
+
+pub(all) struct OpSet {
+  kind : OpSetType
+  ops : Array[Op]
+} derive(Eq, @debug.Debug)
+
+pub(all) enum OpSetType {
+  Path
+  FillPath
+  FillSketch
+} derive(Eq, @debug.Debug)
+pub fn OpSetType::name(Self) -> String
+
+pub(all) struct Options {
+  max_randomness_offset : Double?
+  roughness : Double?
+  bowing : Double?
+  stroke : String?
+  stroke_width : Double?
+  curve_fitting : Double?
+  curve_tightness : Double?
+  curve_step_count : Double?
+  fill : String?
+  fill_style : FillStyle?
+  fill_weight : Double?
+  hachure_angle : Double?
+  hachure_gap : Double?
+  simplification : Double?
+  dash_offset : Double?
+  dash_gap : Double?
+  zigzag_offset : Double?
+  seed : Int?
+  stroke_line_dash : Array[Double]?
+  stroke_line_dash_offset : Double?
+  fill_line_dash : Array[Double]?
+  fill_line_dash_offset : Double?
+  disable_multi_stroke : Bool?
+  disable_multi_stroke_fill : Bool?
+  preserve_vertices : Bool?
+  fixed_decimal_place_digits : Int?
+  fill_shape_roughness_gain : Double?
+}
+pub fn Options::new(max_randomness_offset? : Double, roughness? : Double, bowing? : Double, stroke? : String, stroke_width? : Double, curve_fitting? : Double, curve_tightness? : Double, curve_step_count? : Double, fill? : String, fill_style? : FillStyle, fill_weight? : Double, hachure_angle? : Double, hachure_gap? : Double, simplification? : Double, dash_offset? : Double, dash_gap? : Double, zigzag_offset? : Double, seed? : Int, stroke_line_dash? : Array[Double], stroke_line_dash_offset? : Double, fill_line_dash? : Array[Double], fill_line_dash_offset? : Double, disable_multi_stroke? : Bool, disable_multi_stroke_fill? : Bool, preserve_vertices? : Bool, fixed_decimal_place_digits? : Int, fill_shape_roughness_gain? : Double) -> Self
+
+pub(all) struct PathInfo {
+  d : String
+  stroke : String
+  stroke_width : Double
+  fill : String?
+} derive(Eq, @debug.Debug)
+
+pub struct ResolvedOptions {
+  max_randomness_offset : Double
+  roughness : Double
+  bowing : Double
+  stroke : String
+  stroke_width : Double
+  curve_fitting : Double
+  curve_tightness : Double
+  curve_step_count : Double
+  fill : String?
+  fill_style : FillStyle
+  fill_weight : Double
+  hachure_angle : Double
+  hachure_gap : Double
+  simplification : Double?
+  dash_offset : Double
+  dash_gap : Double
+  zigzag_offset : Double
+  seed : Int
+  stroke_line_dash : Array[Double]?
+  stroke_line_dash_offset : Double?
+  fill_line_dash : Array[Double]?
+  fill_line_dash_offset : Double?
+  disable_multi_stroke : Bool
+  disable_multi_stroke_fill : Bool
+  preserve_vertices : Bool
+  fixed_decimal_place_digits : Int?
+  fill_shape_roughness_gain : Double
+  // private fields
+}
+pub fn ResolvedOptions::random_source(Self) -> @random.RandomSource
+
+pub(all) enum Shape {
+  Line
+  Rectangle
+  Ellipse
+  Circle
+  LinearPath
+  Polygon
+  Arc
+  Curve
+  Path
+} derive(Eq, @debug.Debug)
+pub fn Shape::name(Self) -> String
+
+// Type aliases
+
+// Traits

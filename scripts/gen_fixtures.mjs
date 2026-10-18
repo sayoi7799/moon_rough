@@ -535,6 +535,151 @@ generators.push({
   },
 });
 
+// --- core: rough.generator() drawables ---------------------------------------
+
+const rough = require('roughjs');
+
+const NUMBER_OPTIONS = ['maxRandomnessOffset', 'roughness', 'bowing', 'strokeWidth',
+  'curveFitting', 'curveTightness', 'curveStepCount', 'fillWeight', 'hachureAngle',
+  'hachureGap', 'simplification', 'dashOffset', 'dashGap', 'zigzagOffset',
+  'strokeLineDashOffset', 'fillLineDashOffset', 'fillShapeRoughnessGain'];
+const INT_OPTIONS = ['seed', 'fixedDecimalPlaceDigits'];
+const BOOL_OPTIONS = ['disableMultiStroke', 'disableMultiStrokeFill', 'preserveVertices'];
+const STRING_OPTIONS = ['stroke', 'fill', 'fillStyle'];
+const ARRAY_OPTIONS = ['strokeLineDash', 'fillLineDash'];
+
+/** `name:type:value` pairs joined by `;` (`-` for no options object). */
+function encodeOptions(options) {
+  if (options === undefined) return '-';
+  return Object.entries(options).map(([k, v]) => {
+    if (NUMBER_OPTIONS.includes(k)) return `${k}:n:${hex(v)}`;
+    if (INT_OPTIONS.includes(k)) {
+      if (!Number.isInteger(v) || v < -(2 ** 31) || v >= 2 ** 31) throw new Error(`${k} = ${v}`);
+      return `${k}:i:${v}`;
+    }
+    if (BOOL_OPTIONS.includes(k)) return `${k}:b:${v ? 1 : 0}`;
+    if (STRING_OPTIONS.includes(k)) {
+      if (/[;:|]/.test(v)) throw new Error(`unsupported string option ${v}`);
+      return `${k}:s:${v}`;
+    }
+    if (ARRAY_OPTIONS.includes(k)) return `${k}:a:${hexList(v)}`;
+    throw new Error(`unknown option ${k}`);
+  }).join(';');
+}
+
+const OP_CODES = { move: 'm', lineTo: 'l', bcurveTo: 'c' };
+const SET_CODES = { path: 'P', fillPath: 'F', fillSketch: 'S' };
+
+/** `T:op hex..,op hex..;T:...` for the op sets of a drawable. */
+function encodeSets(sets) {
+  return sets.map((set) => `${SET_CODES[set.type]}:${set.ops
+    .map((op) => `${OP_CODES[op.op]} ${hexList(op.data)}`).join(',')}`).join(';');
+}
+
+/** Shape arguments: numbers as hex, point lists flat, curves `;`-separated. */
+function encodeArgs(shape, args) {
+  switch (shape) {
+    case 'linearPath': case 'polygon': case 'curve': return flatPoints(args);
+    case 'curves': return args.map(flatPoints).join(';');
+    case 'path': return args;
+    default: return hexList(args);
+  }
+}
+
+function callShape(gen, shape, args, options) {
+  switch (shape) {
+    case 'line': return gen.line(...args, options);
+    case 'rectangle': return gen.rectangle(...args, options);
+    case 'ellipse': return gen.ellipse(...args, options);
+    case 'circle': return gen.circle(...args, options);
+    case 'linearPath': return gen.linearPath(args, options);
+    case 'polygon': return gen.polygon(args, options);
+    case 'arc': return gen.arc(args[0], args[1], args[2], args[3], args[4], args[5], !!args[6], options);
+    case 'curve': case 'curves': return gen.curve(args, options);
+    case 'path': return gen.path(args, options);
+    default: throw new Error(shape);
+  }
+}
+
+/**
+ * One fixture entry: `shape|args|options|ok|drawable shape|sets|seeded|fallback`
+ * or `shape|args|options|error|tag`. Every case uses a fresh generator (with
+ * `config` options when given) and a fresh Math.random sequence.
+ */
+function drawableCase({ shape, args, options, config }) {
+  resetRandom();
+  const gen = rough.generator(config ? { options: config } : undefined);
+  const head = [shape, encodeArgs(shape, args), encodeOptions(options), encodeOptions(config)];
+  if (head.some((f) => f.includes('|'))) throw new Error('`|` in a fixture field');
+  let drawable;
+  try {
+    drawable = callShape(gen, shape, structuredClone(args), options && { ...options });
+  } catch (e) {
+    return [...head, 'error', errorTag(e)].join('|');
+  }
+  const { seeded, fallback } = randomCounts();
+  return [...head, 'ok', drawable.shape, encodeSets(drawable.sets), seeded, fallback].join('|');
+}
+
+/** Representative arguments for every shape. */
+const SHAPE_ARGS = {
+  line: [[10, 10, 200, 120], [0, 0, 600, 0], [5, 5, 5, 300]],
+  rectangle: [[10, 10, 200, 100], [50, 60, 40, 300], [-20, 30, 600, 20]],
+  ellipse: [[150, 100, 200, 100], [80, 80, 40, 120], [300, 300, 600, 400]],
+  circle: [[100, 100, 80], [50, 50, 300], [0, 0, 10]],
+  linearPath: [[[10, 10], [200, 30], [120, 180], [250, 220]], [[0, 0], [100, 100]],
+    [[5, 5], [80, 5], [80, 80], [5, 80], [5, 10]]],
+  polygon: [[[10, 10], [200, 30], [120, 180]], [[0, 0], [100, 0], [100, 100], [50, 150], [0, 100]],
+    [[30, 10], [60, 90], [0, 40], [60, 40], [0, 90]]],
+  arc: [[150, 150, 200, 120, 0, Math.PI / 2, 1], [150, 150, 200, 200, Math.PI, Math.PI * 1.75, 0],
+    [100, 100, 150, 100, -Math.PI / 3, Math.PI, 1], [80, 80, 100, 100, 0, Math.PI * 2.5, 1]],
+  curve: [[[10, 10], [100, 80], [180, 20], [260, 120]], [[0, 0], [50, 100], [100, 0]],
+    [[20, 20], [60, 200], [200, 60], [240, 240], [300, 30], [340, 200]]],
+  curves: [[[[10, 10], [100, 80], [180, 20], [260, 120]], [[20, 150], [120, 220], [220, 160]]],
+    [[[0, 0], [50, 50]], [[60, 60], [120, 10], [180, 90], [240, 30]]]],
+  path: ['M10 10 L 100 100 L 150 20 Z', 'M 10 80 C 40 10, 65 10, 95 80 S 150 150, 180 80',
+    'M80 80 A 45 45, 0, 0, 0, 125 125 L 125 80 Z', 'M 20 20 h 100 v 60 h -100 z m 20 10 h 30 v 20 h -30 z',
+    'M10 80 Q 95 10 180 80 T 300 80'],
+};
+
+const SHAPES = Object.keys(SHAPE_ARGS);
+
+generators.push({
+  name: 'core_shapes',
+  run() {
+    const items = [];
+    const variants = [
+      undefined,
+      { seed: 1 },
+      { seed: 42, roughness: 2.5 },
+      { seed: 12345, roughness: 0 },
+      { seed: 7, bowing: 4, strokeWidth: 3 },
+      { seed: 99, preserveVertices: true },
+      { seed: 2024, disableMultiStroke: true },
+      { seed: 5, stroke: 'none' },
+      { seed: 31, roughness: 0.5, maxRandomnessOffset: 5, curveTightness: 0.4 },
+    ];
+    const fills = [undefined, { fill: 'red', fillStyle: 'solid' }, { fill: 'blue' },
+      { fill: '#0a0', fillStyle: 'hachure', hachureAngle: 60, hachureGap: 8 }];
+    for (const shape of SHAPES) {
+      SHAPE_ARGS[shape].forEach((args, a) => {
+        variants.forEach((variant, v) => {
+          fills.forEach((fill, f) => {
+            if ((a + v + f) % 2 && variant !== undefined) return; // keep the file small
+            const options = variant || fill ? { ...variant, ...fill } : undefined;
+            items.push(drawableCase({ shape, args, options }));
+          });
+        });
+      });
+    }
+    // Generator-level options (`rough.generator({ options })`).
+    items.push(drawableCase({ shape: 'rectangle', args: [10, 10, 80, 60], config: { seed: 77, fill: 'red' } }));
+    items.push(drawableCase({ shape: 'ellipse', args: [50, 50, 80, 60], options: { roughness: 2 },
+      config: { seed: 78, fill: 'blue', fillStyle: 'solid' } }));
+    writeFixture('core', 'core_shapes_fixtures_test.mbt', { shape_fixtures: items });
+  },
+});
+
 function main() {
   const only = process.argv.slice(2);
   for (const { name, run } of generators) {
