@@ -1,0 +1,18 @@
+{
+  "name": "moon-rough-fixtures",
+  "private": true,
+  "description": "Generates MoonBit test fixtures from the official rough.js implementation.",
+  "type": "module",
+  "scripts": {
+    "gen": "node gen_fixtures.mjs"
+  },
+  "dependencies": {
+    "roughjs": "4.6.6"
+  },
+  "overrides": {
+    "hachure-fill": "0.5.2",
+    "path-data-parser": "0.1.0",
+    "points-on-curve": "0.2.0",
+    "points-on-path": "0.2.1"
+  }
+}
