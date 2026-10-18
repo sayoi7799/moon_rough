@@ -1,0 +1,11 @@
+import {
+  "sayoi7799/moon_rough/jsmath",
+}
+
+import {
+  "sayoi7799/moon_rough/internal/fixture",
+} for "test"
+
+// Derived Eq / Debug methods are promoted to methods on purpose.
+
+warnings = "-implicit_impl_as_method"

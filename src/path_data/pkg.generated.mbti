@@ -1,0 +1,33 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "sayoi7799/moon_rough/path_data"
+
+import {
+  "moonbitlang/core/debug",
+}
+
+// Values
+pub fn absolutize(Array[Segment]) -> Array[Segment]
+
+pub fn normalize(Array[Segment]) -> Array[Segment]
+
+pub fn parse_path(StringView) -> Array[Segment] raise PathError
+
+pub fn serialize(Array[Segment]) -> String
+
+// Errors
+pub(all) suberror PathError {
+  InvalidCharacter(Int)
+  ParamNotANumber(Char, String)
+  EndedShort
+  NumberAfterClose
+} derive(Eq, @debug.Debug)
+
+// Types and methods
+pub(all) struct Segment {
+  key : Char
+  data : Array[Double]
+} derive(Eq, @debug.Debug)
+
+// Type aliases
+
+// Traits

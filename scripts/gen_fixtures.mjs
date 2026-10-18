@@ -245,6 +245,114 @@ generators.push({
   },
 });
 
+// --- path_data: path-data-parser ------------------------------------------
+
+const pathDataParser = await import('path-data-parser');
+
+/** `K hex hex ...;K ...`: a segment list. */
+function encodeSegments(segments) {
+  return segments.map(({ key, data }) => (data.length ? `${key} ${hexList(data)}` : key)).join(';');
+}
+
+/** The error rough.js / path-data-parser reports, as a short tag. */
+function errorTag(e) {
+  if (e instanceof TypeError) return 'token'; // tokenize() returned []
+  if (e.message === 'Path data ended short') return 'short';
+  const m = /^Param not a number: (.*)$/.exec(e.message);
+  if (m) return `param:${m[1]}`;
+  throw e;
+}
+
+/** Hand-written paths covering every command and the parser's corner cases. */
+const HANDWRITTEN_PATHS = [
+  '', 'M 10 10', 'M10,10 L 20 20', 'M 10 10 20 20 30 30', 'm 10 10 20 20 30 30',
+  'M10-20L.5.5', 'M1.5.5.5', 'M-1-2-3-4', 'M1e2 1E-1 L 2e+1,-3.5e-2', 'M 1e 2',
+  'M 10 10 H 50 V 60 h -10 v -10 Z', 'M 0 0 C 10 0 20 10 20 20 S 30 40 40 40 s 10 10 20 0',
+  'M 0 0 Q 10 20 30 0 T 60 0 t 30 0 q 10 -10 20 0', 'M 0 0 L 10 10 S 20 0 30 10',
+  'M 0 0 L 10 10 T 20 0', 'M 0 0 c 1 2 3 4 5 6 7 8 9 10 11 12',
+  'M 10 10 L 20 20 Z m 5 5 l 10 0 z l 3 3', 'M 1 1 Z Z L 2 2', 'L 10 10', '10 10 20 20',
+  ' \t\n,M 1 1', 'M 0 0 A 10 10 0 0 1 20 0', 'M 0 0 A 10 10 0 1 1 20 0',
+  'M 0 0 A 10 10 0 1 0 20 0', 'M 0 0 A 10 10 0 0 0 20 0', 'M 0 0 a 5 5 0 0 1 100 0',
+  'M 0 0 A 30 10 45 1 1 40 40', 'M 0 0 A 30 10 -30 0 0 40 -40', 'M 0 0 A 0 10 0 0 1 20 0',
+  'M 0 0 A 10 0 0 0 1 20 0', 'M 5 5 A 10 10 0 0 1 5 5', 'M 0 0 A 50 50 0 1 1 0.001 0',
+  'M 0 0 A -10 -10 0 0 1 20 0', 'M 0 0 A 10 10 0 2 0.5 20 0', 'M 0 0 a1 1 0 0110 10',
+  'M 0 0 A 1e-5 1e-5 0 0 1 1e5 1e5', 'M 100 100 A 25 25 0 1 1 100.0001 100',
+  'M 10 80 C 40 10, 65 10, 95 80 S 150 150, 180 80', 'M10 80 Q 95 10 180 80',
+  'M 10 10 L 20 20 L', 'M 10', 'M', 'M 10 10 L 20', 'M 10 10 C 1 2 3 4 5',
+  'M 10 10 L Z', 'M 10 10 L 20 M', 'M a', 'M 10 10 X 5', 'hello', 'M 1 1 L 2 2 #',
+  'M 10 10 L 20 20 C 30 30 40 40 L 50 50 60 60', 'M+1+2L+.5-.5', 'M 0 0 L 1e400 -1e400',
+  'M 00012.5000 -0.0', 'M 0,0 l 10,10 l -0 0', 'M 1 2\nL 3 4\r\nL 5 6',
+];
+
+/** A random but mostly well-formed path. */
+function randomPath(rng) {
+  const commands = 'MmLlHhVvCcSsQqTtAaZz';
+  const number = () => {
+    const x = (rng() - 0.5) * (rng() < 0.2 ? 2000 : 200);
+    switch (Math.floor(rng() * 6)) {
+      case 0: return String(Math.round(x));
+      case 1: return x.toFixed(Math.floor(rng() * 4));
+      case 2: return x.toExponential(Math.floor(rng() * 3));
+      case 3: return String(x);
+      case 4: return x.toFixed(2).replace(/^(-?)0\./, '$1.');
+      default: return x.toFixed(1);
+    }
+  };
+  const flag = () => (rng() < 0.9 ? String(Math.floor(rng() * 2)) : number());
+  const sep = (next) => {
+    const r = rng();
+    if (r < 0.15 && next.startsWith('-')) return '';
+    return [' ', ',', ' , ', '\n', '  '][Math.floor(r * 5)];
+  };
+  let out = rng() < 0.9 ? 'M' : (rng() < 0.5 ? 'm' : '');
+  let pending = out === '' ? 'L' : out;
+  let nums = [];
+  const count = 2 + Math.floor(rng() * 12);
+  for (let i = 0; i < count; i++) {
+    const key = i === 0 && out !== '' ? out : commands[Math.floor(rng() * commands.length)];
+    if (i > 0 || out === '') out += (out === '' ? '' : ' ') + key;
+    pending = key;
+    const repeat = key === 'Z' || key === 'z' ? 1 : 1 + Math.floor(rng() * 2);
+    for (let r = 0; r < repeat; r++) {
+      nums = [];
+      switch (pending.toUpperCase()) {
+        case 'A': nums = [Math.abs(+number()) / 2, Math.abs(+number()) / 2, number(), flag(), flag(), number(), number()].map(String); break;
+        case 'C': nums = [number(), number(), number(), number(), number(), number()]; break;
+        case 'S': case 'Q': nums = [number(), number(), number(), number()]; break;
+        case 'M': case 'L': case 'T': nums = [number(), number()]; break;
+        case 'H': case 'V': nums = [number()]; break;
+        default: nums = [];
+      }
+      for (const n of nums) out += sep(n) + n;
+    }
+  }
+  return out;
+}
+
+generators.push({
+  name: 'path_data',
+  run() {
+    const { parsePath, absolutize, normalize, serialize } = pathDataParser;
+    const rng = inputRng(777);
+    const paths = [...HANDWRITTEN_PATHS];
+    for (let i = 0; i < 400; i++) paths.push(randomPath(rng));
+    const items = paths.map((d) => {
+      if (d.includes('|')) throw new Error('`|` is the fixture separator');
+      let parsed;
+      try {
+        parsed = parsePath(d);
+      } catch (e) {
+        return `${d}|${errorTag(e)}`;
+      }
+      const abs = absolutize(parsed);
+      const norm = normalize(abs);
+      return [d, 'ok', encodeSegments(parsed), encodeSegments(abs), encodeSegments(norm),
+        serialize(parsed)].join('|');
+    });
+    writeFixture('path_data', 'path_data_fixtures_test.mbt', { path_fixtures: items });
+  },
+});
+
 function main() {
   const only = process.argv.slice(2);
   for (const { name, run } of generators) {

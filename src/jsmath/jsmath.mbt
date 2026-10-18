@@ -114,8 +114,13 @@ fn pow10(n : Int) -> @bigint.BigInt {
 ///|
 /// `parseFloat` for the decimal literals path-data-parser's tokenizer
 /// accepts (`[-+]?(\d+(\.\d*)?|\.\d+)([eE][-+]?\d+)?`), correctly rounded.
-/// Like JavaScript, literals too large for a double give `Infinity`.
+/// Like JavaScript, literals too large for a double give `Infinity`, and the
+/// strings `toFixed` produces for non-finite numbers (`"NaN"`, `"Infinity"`,
+/// `"-Infinity"`) parse back to those values.
 pub fn parse_float(s : StringView) -> Double {
+  if s == "NaN" {
+    return @double.not_a_number
+  }
   @string.parse_double(s) catch {
     _ if s.length() > 0 && s.unsafe_get(0) == '-' => @double.neg_infinity
     _ => @double.infinity
