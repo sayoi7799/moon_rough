@@ -2,6 +2,8 @@
 package "sayoi7799/moon_rough/random"
 
 // Values
+pub const DEFAULT_FALLBACK_SEED : Int = 20231107
+
 pub fn new_seed(RandomSource) -> Int
 
 // Errors

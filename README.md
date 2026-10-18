@@ -81,7 +81,7 @@ fn main {
 
 正常输入下，输出与 rough.js 逐位一致。差异只出现在 API 形式，以及 rough.js 自身会出错的输入上：
 
-1. **`Math.random()` 可以注入。** rough.js 在三处用未加种子的 `Math.random()`：seed 为 0 时、dots 填充的点位置、hachure 的一个回退分支。所以 rough.js 的 dots 填充即使设了 seed 也不可复现。moon_rough 把这些调用交给 `RandomSource`：默认用 `@random.Rand`，传 `RandomSource::park_miller(n)` 则完全可复现（测试就是这样对照 dots 的）。注意默认的 `@random.Rand` 每次运行起点相同，并不像 `Math.random()` 那样每次不同；需要真随机时请自己提供 `RandomSource::new(f)`。
+1. **`Math.random()` 可以注入。** rough.js 在三处用未加种子的 `Math.random()`：seed 为 0 时、dots 填充的点位置、hachure 的一个回退分支。所以 rough.js 的 dots 填充即使设了 seed 也不可复现。moon_rough 把这些调用交给 `RandomSource`：默认是固定种子（`DEFAULT_FALLBACK_SEED`）的 Park–Miller 序列，传 `RandomSource::park_miller(n)` 可以换种子（测试就是这样对照 dots 的）。注意默认序列每次运行起点相同，并不像 `Math.random()` 那样每次不同；需要每次不同时请自己提供 `RandomSource::new(f)`。
 2. **不修改调用方的数据。** hachure-fill 会原地旋转传入的多边形再转回来，rough.js 用户传进 `polygon()` 的点会被改动最后几位。moon_rough 内部复制一份，并在内部照样保留这种改动（rough.js 后续步骤依赖它）。
 3. **rough.js 不会结束的输入，这里会结束：**
    - 起止角相同的 `arc`（以及任何角度步长 ≤ 0 的循环）：跳过该循环；

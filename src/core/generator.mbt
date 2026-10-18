@@ -11,7 +11,8 @@ pub struct Generator {
 
 ///|
 /// `rough.generator({ options })`. `source` replaces `Math.random()` (seed 0,
-/// dot positions, hachure fallback); the default draws from `@random.Rand`.
+/// dot positions, hachure fallback); the default is
+/// `RandomSource::default()`, a fixed-seed Park-Miller sequence.
 pub fn Generator::new(
   options? : Options,
   source? : @random.RandomSource,

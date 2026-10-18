@@ -34,11 +34,17 @@ pub fn RandomSource::park_miller(seed : Int) -> RandomSource {
 }
 
 ///|
-/// The default source: `Math.random()` is replaced by `@core_random.Rand`.
+/// The default source: `Math.random()` is replaced by a Park-Miller
+/// sequence with a fixed seed (`DEFAULT_FALLBACK_SEED`). Unlike JavaScript's
+/// `Math.random()` it starts at the same point in every run; pass
+/// `RandomSource::new(f)` with your own generator for varying output.
 pub fn RandomSource::default() -> RandomSource {
-  let rand = @core_random.Rand::new()
-  RandomSource::new(fn() { rand.double() })
+  RandomSource::park_miller(DEFAULT_FALLBACK_SEED)
 }
+
+///|
+/// The seed of `RandomSource::default()`.
+pub const DEFAULT_FALLBACK_SEED : Int = 20231107
 
 ///|
 /// The equivalent of calling `Math.random()`.
