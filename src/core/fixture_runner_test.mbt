@@ -3,7 +3,7 @@
 
 ///|
 /// The Math.random replacement the fixture generator installs.
-const FALLBACK_SEED : Int = 1234567
+const FALLBACK_SEED : Int32 = 1234567
 
 ///|
 fn decode_options(s : StringView) -> @core.Options? raise {
@@ -153,7 +153,7 @@ fn fixture_generator(
 /// Compares one drawable fixture entry, drawn with a fresh generator.
 fn run_drawable_fixture(
   stats : @fixture.ErrorStats,
-  index : Int,
+  index : Int32,
   entry : String,
 ) -> Unit raise {
   let f = @fixture.fields(entry)

@@ -11,8 +11,8 @@
 /// counts the numbers drawn, which the tests compare with rough.js.
 pub struct RandomSource {
   priv fallback : () -> Double
-  priv mut seeded_calls : Int
-  priv mut fallback_calls : Int
+  priv mut seeded_calls : Int32
+  priv mut fallback_calls : Int32
 }
 
 ///|
@@ -25,7 +25,7 @@ pub fn RandomSource::new(fallback : () -> Double) -> RandomSource {
 ///|
 /// A source whose `Math.random()` replacement is the same Park-Miller
 /// sequence rough.js' `Random` produces for `seed` (which must not be 0).
-pub fn RandomSource::park_miller(seed : Int) -> RandomSource {
+pub fn RandomSource::park_miller(seed : Int32) -> RandomSource {
   let mut state = seed
   RandomSource::new(fn() {
     state = 48271 * state
@@ -44,7 +44,7 @@ pub fn RandomSource::default() -> RandomSource {
 
 ///|
 /// The seed of `RandomSource::default()`.
-pub const DEFAULT_FALLBACK_SEED : Int = 20231107
+pub const DEFAULT_FALLBACK_SEED : Int32 = 20231107
 
 ///|
 /// The equivalent of calling `Math.random()`.
@@ -55,26 +55,26 @@ pub fn RandomSource::fallback(self : RandomSource) -> Double {
 
 ///|
 /// How many seeded numbers (`Random::next` with a non-zero seed) were drawn.
-pub fn RandomSource::seeded_calls(self : RandomSource) -> Int {
+pub fn RandomSource::seeded_calls(self : RandomSource) -> Int32 {
   self.seeded_calls
 }
 
 ///|
 /// How many `Math.random()` replacements were drawn.
-pub fn RandomSource::fallback_calls(self : RandomSource) -> Int {
+pub fn RandomSource::fallback_calls(self : RandomSource) -> Int32 {
   self.fallback_calls
 }
 
 ///|
 /// rough.js' `Random`: a Park-Miller (MINSTD, multiplier 48271) generator.
 pub struct Random {
-  priv mut seed : Int
+  priv mut seed : Int32
   priv source : RandomSource
 }
 
 ///|
 /// `new Random(seed)`. With seed 0, `next` delegates to `source.fallback()`.
-pub fn Random::new(seed : Int, source? : RandomSource) -> Random {
+pub fn Random::new(seed : Int32, source? : RandomSource) -> Random {
   let source = match source {
     Some(source) => source
     None => RandomSource::default()
@@ -100,6 +100,6 @@ pub fn Random::next(self : Random) -> Double {
 
 ///|
 /// `randomSeed()` / `rough.newSeed()`: `Math.floor(Math.random() * 2 ** 31)`.
-pub fn new_seed(source : RandomSource) -> Int {
+pub fn new_seed(source : RandomSource) -> Int32 {
   (source.fallback() * 2147483648.0).floor().to_int()
 }

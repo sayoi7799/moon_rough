@@ -50,8 +50,8 @@ pub fn same(a : Double, b : Double) -> Bool {
 /// Running statistics of the numeric differences seen by one test suite.
 pub struct ErrorStats {
   name : String
-  mut compared : Int
-  mut inexact : Int
+  mut compared : Int32
+  mut inexact : Int32
   mut max_abs : Double
   mut max_rel : Double
 }

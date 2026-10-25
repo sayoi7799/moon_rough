@@ -19,7 +19,7 @@ fn label(
   x : Double,
   y : Double,
   text : String,
-  anchor? : String = "middle",
+  anchor~ : String = "middle",
 ) -> String {
   "<text x=\"\{x}\" y=\"\{y}\" font-family=\"sans-serif\" font-size=\"13\" fill=\"#333\" text-anchor=\"\{anchor}\">\{text}</text>"
 }

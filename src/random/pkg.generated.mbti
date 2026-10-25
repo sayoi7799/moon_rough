@@ -2,9 +2,9 @@
 package "sayoi7799/moon_rough/random"
 
 // Values
-pub const DEFAULT_FALLBACK_SEED : Int = 20231107
+pub const DEFAULT_FALLBACK_SEED : Int32 = 20231107
 
-pub fn new_seed(RandomSource) -> Int
+pub fn new_seed(RandomSource) -> Int32
 
 // Errors
 
@@ -12,7 +12,7 @@ pub fn new_seed(RandomSource) -> Int
 pub struct Random {
   // private fields
 }
-pub fn Random::new(Int, source? : RandomSource) -> Self
+pub fn Random::new(Int32, source? : RandomSource) -> Self
 pub fn Random::next(Self) -> Double
 
 pub struct RandomSource {
@@ -20,10 +20,10 @@ pub struct RandomSource {
 }
 pub fn RandomSource::default() -> Self
 pub fn RandomSource::fallback(Self) -> Double
-pub fn RandomSource::fallback_calls(Self) -> Int
+pub fn RandomSource::fallback_calls(Self) -> Int32
 pub fn RandomSource::new(() -> Double) -> Self
-pub fn RandomSource::park_miller(Int) -> Self
-pub fn RandomSource::seeded_calls(Self) -> Int
+pub fn RandomSource::park_miller(Int32) -> Self
+pub fn RandomSource::seeded_calls(Self) -> Int32
 
 // Type aliases
 

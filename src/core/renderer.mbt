@@ -459,7 +459,7 @@ fn offset(
   min : Double,
   max : Double,
   ops : ResolvedOptions,
-  roughness_gain? : Double = 1.0,
+  roughness_gain~ : Double = 1.0,
 ) -> Double {
   let r = random(ops)
   ops.roughness * roughness_gain * (r * (max - min) + min)
@@ -469,7 +469,7 @@ fn offset(
 fn offset_opt(
   x : Double,
   ops : ResolvedOptions,
-  roughness_gain? : Double = 1.0,
+  roughness_gain~ : Double = 1.0,
 ) -> Double {
   offset(-x, x, ops, roughness_gain~)
 }
@@ -481,7 +481,7 @@ fn double_line(
   x2 : Double,
   y2 : Double,
   o : ResolvedOptions,
-  filling? : Bool = false,
+  filling~ : Bool = false,
 ) -> Array[Op] {
   let single_stroke = if filling {
     o.disable_multi_stroke_fill

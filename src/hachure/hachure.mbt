@@ -66,7 +66,7 @@ pub fn hachure_lines(
   polygons : Array[Array[Point]],
   hachure_gap : Double,
   hachure_angle : Double,
-  hachure_step_offset? : Double = 1.0,
+  hachure_step_offset~ : Double = 1.0,
 ) -> Array[Line] {
   let angle = hachure_angle
   let gap = @jsmath.max(hachure_gap, 0.1)

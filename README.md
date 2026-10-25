@@ -124,6 +124,8 @@ moon test --target native
 
 比较方式：shape 名、OpSet 类型、每个 OpSet 的 op 类型序列、随机数调用次数必须完全一致；坐标要求 `|a − b| ≤ 1e-9 × max(1, |b|)`。这个容差只是保险：正常情况下所有运算都是相同顺序的 IEEE 基本运算，结果应逐位相同；而随机数顺序出错造成的偏差在 roughness × offset 量级（0.1–2），1e-9 不可能把它掩盖。
 
+**js 后端依赖运行它的 Node。** js 后端直接调用宿主的 `Math.sin / cos / tan`，这些函数的最后一位在不同 V8 版本之间可能不同（rough.js 自己也一样），圆弧转贝塞尔这类对微小差异敏感的路径会把它放大到 1e-7 量级。所以 fixtures 是用 Node 24 生成的，js 测试也请用 Node 24 跑；CI 里每个跑 js 测试的任务都固定了 Node 24。wasm-gc 和 native 用 MoonBit 自带的 fdlibm 实现，不受 Node 版本影响。fixtures 里的 NaN 统一写成标准的 `7ff8000000000000`，因为 NaN 的低位同样随 V8 版本变化。
+
 ### 误差报告
 
 `node scripts/error_report.mjs` 在三个后端运行测试并汇总每个套件的最大绝对误差（括号里是不逐位相同的数值个数）：
@@ -144,9 +146,15 @@ moon test --target native
 | path_data | 43038 | 0 (0 inexact) | 0 (0 inexact) | 0 (0 inexact) |
 | random | 13000 | 0 (0 inexact) | 0 (0 inexact) | 0 (0 inexact) |
 
-共比较 2,045,923 个值，**三个后端的最大误差都是 0**（moon 0.1.20260920 / moonc v0.10.14，Windows 11，Node 24.20）。
+共比较 2,045,923 个值，**三个后端的最大误差都是 0**（moon 0.1.20261016 / moonc v0.10.16，Windows 11，Node 24.20）。
 
-CI 用同一版本的 toolchain（`0.10.14+7d59c7ec9`）跑 check、`moon fmt --check` 和三个后端的测试；不同版本的 `moon fmt` 输出不同，所以格式只按这个版本检查。另有一个不阻塞的任务用最新版 MoonBit 跑 check 和测试，用来提前发现兼容性问题。
+CI 用同一版本的 toolchain（`0.10.16+b1a0e846e`）跑 check（不允许警告）、`moon fmt --check`、`moon build --target all`、`moon info` 后的接口文件检查，以及三个后端的测试。不同版本的 `moon fmt` 输出不同，所以格式只按这个版本检查。另外有三个任务：
+
+- 用 `scripts/package-lock.json` 锁定的 roughjs 4.6.6 重新生成 fixtures，和仓库里的比较，必须完全一致；
+- 在 macOS（arm64）和 Windows 上跑同样的测试，暂时不阻塞，因为 clang 可能把 `a * b + c` 合并成 FMA，需要先看一轮结果；
+- 用最新版 MoonBit 跑 check 和测试，提前发现兼容性问题，同样不阻塞。
+
+版本变化见 [CHANGELOG.md](CHANGELOG.md)。
 
 ## 重新生成 fixtures
 

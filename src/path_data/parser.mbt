@@ -14,7 +14,7 @@ pub(all) struct Segment {
 pub(all) suberror PathError {
   /// A character that is neither whitespace, a command nor a number starts at
   /// this UTF-16 offset. (rough.js crashes with a TypeError.)
-  InvalidCharacter(Int)
+  InvalidCharacter(Int32)
   /// A command parameter is not a number, e.g. `L 10 Z`.
   /// (path-data-parser: "Param not a number: <mode>,<text>".)
   ParamNotANumber(Char, String)
@@ -35,7 +35,7 @@ priv enum Token {
 
 ///|
 /// Number of parameters of each command (`PARAMS`), or -1 for non-commands.
-fn param_count(key : Char) -> Int {
+fn param_count(key : Char) -> Int32 {
   match key {
     'A' | 'a' => 7
     'C' | 'c' => 6
@@ -55,7 +55,7 @@ fn is_digit(c : UInt16) -> Bool {
 ///|
 /// Length of the number at `start`, following
 /// `^(([-+]?[0-9]+(\.[0-9]*)?|[-+]?\.[0-9]+)([eE][-+]?[0-9]+)?)`, or 0.
-fn number_length(d : StringView, start : Int) -> Int {
+fn number_length(d : StringView, start : Int32) -> Int32 {
   let n = d.length()
   let mut i = start
   if i < n && (d.unsafe_get(i) == '-' || d.unsafe_get(i) == '+') {

@@ -16,7 +16,7 @@ pub fn serialize(Array[Segment]) -> String
 
 // Errors
 pub(all) suberror PathError {
-  InvalidCharacter(Int)
+  InvalidCharacter(Int32)
   ParamNotANumber(Char, String)
   EndedShort
   NumberAfterClose

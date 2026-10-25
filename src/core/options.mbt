@@ -63,7 +63,7 @@ pub(all) struct Options {
   dash_offset : Double?
   dash_gap : Double?
   zigzag_offset : Double?
-  seed : Int?
+  seed : Int32?
   stroke_line_dash : Array[Double]?
   stroke_line_dash_offset : Double?
   fill_line_dash : Array[Double]?
@@ -71,7 +71,7 @@ pub(all) struct Options {
   disable_multi_stroke : Bool?
   disable_multi_stroke_fill : Bool?
   preserve_vertices : Bool?
-  fixed_decimal_place_digits : Int?
+  fixed_decimal_place_digits : Int32?
   fill_shape_roughness_gain : Double?
 }
 
@@ -96,7 +96,7 @@ pub fn Options::new(
   dash_offset? : Double,
   dash_gap? : Double,
   zigzag_offset? : Double,
-  seed? : Int,
+  seed? : Int32,
   stroke_line_dash? : Array[Double],
   stroke_line_dash_offset? : Double,
   fill_line_dash? : Array[Double],
@@ -104,7 +104,7 @@ pub fn Options::new(
   disable_multi_stroke? : Bool,
   disable_multi_stroke_fill? : Bool,
   preserve_vertices? : Bool,
-  fixed_decimal_place_digits? : Int,
+  fixed_decimal_place_digits? : Int32,
   fill_shape_roughness_gain? : Double,
 ) -> Options {
   {
@@ -164,7 +164,7 @@ pub struct ResolvedOptions {
   dash_offset : Double
   dash_gap : Double
   zigzag_offset : Double
-  seed : Int
+  seed : Int32
   stroke_line_dash : Array[Double]?
   stroke_line_dash_offset : Double?
   fill_line_dash : Array[Double]?
@@ -172,7 +172,7 @@ pub struct ResolvedOptions {
   disable_multi_stroke : Bool
   disable_multi_stroke_fill : Bool
   preserve_vertices : Bool
-  fixed_decimal_place_digits : Int?
+  fixed_decimal_place_digits : Int32?
   fill_shape_roughness_gain : Double
   priv mut randomizer : @random.Random?
   priv source : @random.RandomSource

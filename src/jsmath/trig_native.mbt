@@ -60,9 +60,9 @@ pub fn cos(x : Double) -> Double {
 }
 
 ///|
-fn rem_pio2(x : Double, y : Array[Double]) -> Int {
+fn rem_pio2(x : Double, y : Array[Double]) -> Int32 {
   let hx = get_high_word(x).reinterpret_as_int()
-  let ix : Int = hx & 0x7fffffff
+  let ix : Int32 = hx & 0x7fffffff
   let mut z = 0.0
   if ix <= 0x3fe921fb {
     // |x| <= pi/4, no reduction needed
@@ -178,29 +178,29 @@ fn rem_pio2(x : Double, y : Array[Double]) -> Int {
 fn __kernel_rem_pio2(
   x : Array[Double],
   y : Array[Double],
-  e0 : Int,
-  nx : Int,
-  prec : Int,
-) -> Int {
-  let init_jk : ReadOnlyArray[Int] = [2, 3, 4, 6]
+  e0 : Int32,
+  nx : Int32,
+  prec : Int32,
+) -> Int32 {
+  let init_jk : ReadOnlyArray[Int32] = [2, 3, 4, 6]
   let two24 : Double = 16777216.0 // 0x41700000, 0x00000000
   let twon24 : Double = 5.96046447753906250000e-08 // 0x3E700000, 0x00000000
 
   // Declare variables at the beginning, as in the original C code
-  let mut jz : Int = 0
-  let mut jx : Int = 0
-  let mut jv : Int = 0
-  let mut jp : Int = 0
-  let mut jk : Int = 0
-  let mut carry : Int = 0
-  let mut n : Int = 0
-  let iq : Array[Int] = Array::make(20, 0)
-  let mut i : Int = 0
-  let mut j : Int = 0
-  let mut k : Int = 0
-  let mut m : Int = 0
-  let mut q0 : Int = 0
-  let mut ih : Int = 0
+  let mut jz : Int32 = 0
+  let mut jx : Int32 = 0
+  let mut jv : Int32 = 0
+  let mut jp : Int32 = 0
+  let mut jk : Int32 = 0
+  let mut carry : Int32 = 0
+  let mut n : Int32 = 0
+  let iq : Array[Int32] = Array::make(20, 0)
+  let mut i : Int32 = 0
+  let mut j : Int32 = 0
+  let mut k : Int32 = 0
+  let mut m : Int32 = 0
+  let mut q0 : Int32 = 0
+  let mut ih : Int32 = 0
   let mut z : Double = 0
   let mut fw : Double = 0
   let f : Array[Double] = Array::make(20, 0.0)
@@ -451,7 +451,7 @@ fn __kernel_rem_pio2(
 }
 
 ///|
-fn __kernel_sin(x : Double, y : Double, iy : Int) -> Double {
+fn __kernel_sin(x : Double, y : Double, iy : Int32) -> Double {
   let s1 = -1.66666666666666324348e-01
   let s2 = 8.33333333332248946124e-03
   let s3 = -1.98412698298579493134e-04
@@ -514,7 +514,7 @@ fn __kernel_cos(x : Double, y : Double) -> Double {
 }
 
 ///|
-let two_over_pi : ReadOnlyArray[Int] = [
+let two_over_pi : ReadOnlyArray[Int32] = [
   0xA2F983, 0x6E4E44, 0x1529FC, 0x2757D1, 0xF534DD, 0xC0DB62, 0x95993C, 0x439041,
   0xFE5163, 0xABDEBB, 0xC561B7, 0x246E3A, 0x424DD2, 0xE00649, 0x2EEA09, 0xD1921C,
   0xFE1DEB, 0x1CB129, 0xA73EE8, 0x8235F5, 0x2EBB44, 0x84E99C, 0x7026B4, 0x5F7E41,
@@ -539,7 +539,7 @@ let pi_over_2 : ReadOnlyArray[Double] = [
 ]
 
 ///|
-let npio2_hw : ReadOnlyArray[Int] = [
+let npio2_hw : ReadOnlyArray[Int32] = [
   0x3FF921FB, 0x400921FB, 0x4012D97C, 0x401921FB, 0x401F6A7A, 0x4022D97C, 0x4025FDBB,
   0x402921FB, 0x402C463A, 0x402F6A7A, 0x4031475C, 0x4032D97C, 0x40346B9C, 0x4035FDBB,
   0x40378FDB, 0x403921FB, 0x403AB41B, 0x403C463A, 0x403DD85A, 0x403F6A7A, 0x40407E4C,
@@ -578,7 +578,7 @@ const HALF : Double = 0.5
 const TWO24 : Double = 16777216.0 // 0x41700000, 0x00000000 */
 
 ///|
-fn set_low_word(d : Double, v : UInt) -> Double {
+fn set_low_word(d : Double, v : UInt32) -> Double {
   let bits : UInt64 = d.reinterpret_as_uint64()
   let bits = bits & 0xFFFF_FFFF_0000_0000
   let bits = bits | v.to_uint64()
@@ -586,7 +586,7 @@ fn set_low_word(d : Double, v : UInt) -> Double {
 }
 
 ///|
-fn set_high_word(d : Double, v : UInt) -> Double {
+fn set_high_word(d : Double, v : UInt32) -> Double {
   let bits : UInt64 = d.reinterpret_as_uint64()
   let bits = bits & 0x0000_0000_FFFF_FFFF
   let bits = bits | (v.to_uint64() << 32)
@@ -594,11 +594,11 @@ fn set_high_word(d : Double, v : UInt) -> Double {
 }
 
 ///|
-fn get_high_word(x : Double) -> UInt {
+fn get_high_word(x : Double) -> UInt32 {
   (x.reinterpret_as_uint64() >> 32).to_uint()
 }
 
 ///|
-fn get_low_word(x : Double) -> UInt {
+fn get_low_word(x : Double) -> UInt32 {
   x.reinterpret_as_uint64().to_uint()
 }

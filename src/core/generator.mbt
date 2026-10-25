@@ -32,7 +32,7 @@ pub fn Generator::new(
 ///|
 /// `RoughGenerator.newSeed()`: a random seed in `[0, 2^31)` from the
 /// generator's random source.
-pub fn Generator::new_seed(self : Generator) -> Int {
+pub fn Generator::new_seed(self : Generator) -> Int32 {
   @random.new_seed(self.default_options.source)
 }
 
@@ -159,7 +159,7 @@ pub fn Generator::arc(
   height : Double,
   start : Double,
   stop : Double,
-  closed? : Bool = false,
+  closed~ : Bool = false,
   options? : Options,
 ) -> Drawable {
   let o = self.resolve(options)
@@ -408,7 +408,7 @@ fn merged_shape(input : Array[Op]) -> Array[Op] {
 pub fn Generator::ops_to_path(
   self : Generator,
   drawing : OpSet,
-  fixed_decimals? : Int,
+  fixed_decimals? : Int32,
 ) -> String {
   ignore(self)
   ops_to_path(drawing, fixed_decimals?)
@@ -416,7 +416,7 @@ pub fn Generator::ops_to_path(
 
 ///|
 /// `opsToPath` (see `Generator::ops_to_path`).
-pub fn ops_to_path(drawing : OpSet, fixed_decimals? : Int) -> String {
+pub fn ops_to_path(drawing : OpSet, fixed_decimals? : Int32) -> String {
   let fmt = match fixed_decimals {
     Some(digits) if digits >= 0 =>
       fn(x : Double) {
