@@ -4,13 +4,15 @@ on:
   push:
   pull_request:
 
+env:
+  # The toolchain the project is developed and formatted with.
+  MOONBIT_VERSION: 0.10.16+b1a0e846e
+
 jobs:
-  # The toolchain the project is developed and formatted with. `moon fmt`
-  # output changes between releases, so formatting is only checked here.
+  # `moon fmt` output changes between releases, so formatting and the
+  # generated interfaces are only checked with the pinned version.
   test:
     runs-on: ubuntu-latest
-    env:
-      MOONBIT_VERSION: 0.10.16+b1a0e846e
     steps:
       - uses: actions/checkout@v4
 
@@ -49,6 +51,33 @@ jobs:
         run: |
           moon run src/examples/gallery > gallery.generated.svg
           diff -q gallery.svg gallery.generated.svg
+
+  # The fixtures are the only source of expected values, so anyone must be
+  # able to regenerate them from the pinned rough.js and get the same files.
+  fixtures:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+
+      - name: Install MoonBit ${{ env.MOONBIT_VERSION }}
+        run: |
+          curl -fsSL https://cli.moonbitlang.com/install/unix.sh | bash -s "$MOONBIT_VERSION"
+          echo "$HOME/.moon/bin" >> "$GITHUB_PATH"
+
+      - name: Install the pinned rough.js
+        working-directory: scripts
+        run: npm ci --ignore-scripts
+
+      - name: Regenerate the fixtures
+        working-directory: scripts
+        run: node gen_fixtures.mjs
+
+      - name: Fixtures match the repository
+        run: git diff --exit-code
 
   # Early warning for the latest release; does not fail the workflow.
   latest:
