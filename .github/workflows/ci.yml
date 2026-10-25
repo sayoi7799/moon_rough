@@ -52,6 +52,69 @@ jobs:
           moon run src/examples/gallery > gallery.generated.svg
           diff -q gallery.svg gallery.generated.svg
 
+  # The same checks on macOS (arm64) and Windows. Bit-identical results on
+  # other platforms are the point: native code is compiled by clang / MSVC,
+  # which may contract a * b + c into a fused multiply-add. Not blocking until
+  # a first run shows what these platforms do.
+  platforms:
+    name: platforms (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    continue-on-error: true
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [macos-latest, windows-latest]
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install MoonBit ${{ env.MOONBIT_VERSION }} (Unix)
+        if: runner.os != 'Windows'
+        run: |
+          curl -fsSL https://cli.moonbitlang.com/install/unix.sh | bash -s "$MOONBIT_VERSION"
+          echo "$HOME/.moon/bin" >> "$GITHUB_PATH"
+
+      - name: Install MoonBit ${{ env.MOONBIT_VERSION }} (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          $env:MOONBIT_INSTALL_VERSION = $env:MOONBIT_VERSION
+          Invoke-RestMethod https://cli.moonbitlang.com/install/powershell.ps1 | Invoke-Expression
+          Add-Content -Path $env:GITHUB_PATH -Value "$HOME\.moon\bin"
+
+      - name: C compiler for the native target (Windows)
+        if: runner.os == 'Windows'
+        uses: ilammy/msvc-dev-cmd@v1
+
+      - name: Version
+        run: moon version --all
+
+      - name: Line endings are LF
+        run: |
+          ! git ls-files --eol | grep -v "w/lf" | grep -v "w/-text"
+
+      - name: Check
+        run: moon check --deny-warn
+
+      - name: Build (all targets)
+        run: moon build --target all
+
+      - name: Test (js)
+        run: moon test --target js
+
+      - name: Test (wasm-gc)
+        run: moon test --target wasm-gc
+
+      - name: Test (native)
+        run: moon test --target native
+
+      - name: gallery.svg is identical
+        run: |
+          moon run src/examples/gallery --target js > gallery.generated.svg
+          diff -q --strip-trailing-cr gallery.svg gallery.generated.svg
+
   # The fixtures are the only source of expected values, so anyone must be
   # able to regenerate them from the pinned rough.js and get the same files.
   fixtures:
