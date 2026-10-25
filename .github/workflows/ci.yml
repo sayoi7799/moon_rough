@@ -28,6 +28,14 @@ jobs:
       - name: Format
         run: moon fmt --check
 
+      - name: Build (all targets)
+        run: moon build --target all
+
+      - name: Interfaces are up to date
+        run: |
+          moon info
+          git diff --exit-code -- '*.mbti'
+
       - name: Test (js)
         run: moon test --target js
 
