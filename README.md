@@ -10,7 +10,7 @@
 
 ## 定位
 
-rough.js 是 Excalidraw、Mermaid 等工具手绘风格的底层库。MoonBit 生态里目前还没有同类库：Milky2018/diago 的 `CompileOptions.sketch` 目前返回 `UnsupportedFeature`，mizchi/moonlight 也没有手绘渲染。
+rough.js 是 Excalidraw、Mermaid 等工具手绘风格的底层库。MoonBit 生态里目前还没有同类库：diago（`moonbit-community/diago`，原 Milky2018/diago）的 `CompileOptions.sketch` 目前返回 `UnsupportedFeature`，mizchi/moonlight 也没有手绘渲染。
 
 moon_rough 是**移植**，不是重新实现。目标是：**给定相同的 seed 和参数，生成和 rough.js 一样的图形。**实际结果比这更进一步：在下面的所有对照测试里，MoonBit 和 rough.js 的输出逐位相同，最大误差为 0。
 
@@ -66,6 +66,21 @@ fn main {
 | `RoughSVG.draw(drawable)` | `drawable_to_svg(drawable)`（属性及顺序与 `setAttribute` 一致） |
 | `{ roughness: 2, fillStyle: 'zigzag' }` | `Options::new(roughness=2.0, fill_style=Zigzag)` |
 
+## 给 diago 的流程图加手绘风格
+
+[diago](https://github.com/moonbit-community/diago) 能把 D2 文本画成流程图，但它自己的手绘（`sketch`）模式还没有实现。[`examples/diago_sketch`](examples/diago_sketch) 是一个独立的小模块：先让 diago 照常生成 SVG，再把形状、连线和箭头的几何换成 moon_rough 的手绘线条，文字、颜色、主题和深色模式不变。
+
+| 普通版（diago） | 手绘版（moon_rough） |
+|---|---|
+| <img src="examples/diago_sketch/demo.svg" width="460"> | <img src="examples/diago_sketch/demo-sketch.svg" width="460"> |
+
+```moonbit
+let svg = @diago.compile(source)
+let sketch = @diago_sketch.sketchify(svg, seed=7)
+```
+
+同样的输入和 seed，输出逐字节相同，js、wasm-gc、native 上都一样（CI 逐一比对提交的 SVG）。它不是发布模块的一部分，因为要依赖 diago 和它的一批依赖；详细说明和限制见 [它的 README](examples/diago_sketch/README.md)。
+
 ## 支持范围
 
 | 功能 | 状态 |
@@ -75,7 +90,8 @@ fn main {
 | 选项：maxRandomnessOffset、roughness、bowing、stroke、strokeWidth、curveFitting、curveTightness、curveStepCount、fill、fillStyle、fillWeight、hachureAngle、hachureGap、simplification、dashOffset、dashGap、zigzagOffset、seed、strokeLineDash、strokeLineDashOffset、fillLineDash、fillLineDashOffset、disableMultiStroke、disableMultiStrokeFill、preserveVertices、fixedDecimalPlaceDigits、fillShapeRoughnessGain | ✅ 全部（默认值照 `generator.ts`） |
 | SVG 路径：M L H V C S Q T A Z 及其相对形式、隐式重复、紧凑数字写法、弧线转三次贝塞尔 | ✅ |
 | 输出：Drawable（OpSet 列表）、SVG 字符串、`opsToPath`、`toPaths` | ✅ |
-| Canvas 后端、浏览器演示页、与 diago 对接、动画 | ⏳ 后续阶段 |
+| 给 diago 的流程图加手绘风格 | ✅ 示例模块 [`examples/diago_sketch`](examples/diago_sketch)，见下一节 |
+| Canvas 后端、浏览器演示页、动画 | ⏳ 后续阶段 |
 
 ## 与 rough.js 的差异
 
