@@ -10,4 +10,4 @@ target/
 .moonagent/
 node_modules/
 *.log
-examples/
+/examples/
