@@ -1,0 +1,20 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "sayoi7799/diago_sketch"
+
+import {
+  "moonbitlang/core/debug",
+}
+
+// Values
+pub fn sketchify(String, seed? : Int32, roughness? : Double) -> String raise SketchError
+
+// Errors
+pub suberror SketchError {
+  Malformed(String)
+} derive(Eq, @debug.Debug)
+
+// Types and methods
+
+// Type aliases
+
+// Traits
