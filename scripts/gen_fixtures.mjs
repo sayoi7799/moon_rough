@@ -82,9 +82,14 @@ export function randomCounts() {
 const f64 = new Float64Array(1);
 const u64 = new BigUint64Array(f64.buffer);
 
-/** IEEE-754 bit pattern of `x` as 16 lowercase hex digits. */
+/**
+ * IEEE-754 bit pattern of `x` as 16 lowercase hex digits. Every NaN is written
+ * as the canonical quiet NaN: the payload and sign of a NaN depend on the V8
+ * version and the CPU, and the tests only compare NaNs as "both NaN".
+ */
 export function hex(x) {
   if (typeof x !== 'number') throw new Error(`not a number: ${x}`);
+  if (Number.isNaN(x)) return '7ff8000000000000';
   f64[0] = x;
   return u64[0].toString(16).padStart(16, '0');
 }

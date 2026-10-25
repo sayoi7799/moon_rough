@@ -7,6 +7,9 @@ on:
 env:
   # The toolchain the project is developed and formatted with.
   MOONBIT_VERSION: 0.10.16+b1a0e846e
+  # The js backend calls the host Node's Math.sin / cos / tan, whose last bit
+  # differs between V8 versions (rough.js itself too). The fixtures come from
+  # Node 24, so every job that runs js tests uses it.
 
 jobs:
   # `moon fmt` output changes between releases, so formatting and the
@@ -15,6 +18,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
 
       - name: Install MoonBit ${{ env.MOONBIT_VERSION }}
         run: |
@@ -69,6 +76,10 @@ jobs:
         shell: bash
     steps:
       - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
 
       - name: Install MoonBit ${{ env.MOONBIT_VERSION }} (Unix)
         if: runner.os != 'Windows'
@@ -148,6 +159,10 @@ jobs:
     continue-on-error: true
     steps:
       - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
 
       - name: Install the latest MoonBit
         run: |

@@ -124,6 +124,8 @@ moon test --target native
 
 比较方式：shape 名、OpSet 类型、每个 OpSet 的 op 类型序列、随机数调用次数必须完全一致；坐标要求 `|a − b| ≤ 1e-9 × max(1, |b|)`。这个容差只是保险：正常情况下所有运算都是相同顺序的 IEEE 基本运算，结果应逐位相同；而随机数顺序出错造成的偏差在 roughness × offset 量级（0.1–2），1e-9 不可能把它掩盖。
 
+**js 后端依赖运行它的 Node。** js 后端直接调用宿主的 `Math.sin / cos / tan`，这些函数的最后一位在不同 V8 版本之间可能不同（rough.js 自己也一样），圆弧转贝塞尔这类对微小差异敏感的路径会把它放大到 1e-7 量级。所以 fixtures 是用 Node 24 生成的，js 测试也请用 Node 24 跑；CI 里每个跑 js 测试的任务都固定了 Node 24。wasm-gc 和 native 用 MoonBit 自带的 fdlibm 实现，不受 Node 版本影响。fixtures 里的 NaN 统一写成标准的 `7ff8000000000000`，因为 NaN 的低位同样随 V8 版本变化。
+
 ### 误差报告
 
 `node scripts/error_report.mjs` 在三个后端运行测试并汇总每个套件的最大绝对误差（括号里是不逐位相同的数值个数）：
