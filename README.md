@@ -49,7 +49,7 @@ fn main {
 | `.../curve` | `points_on_bezier_curves`、`simplify`、`curve_to_bezier`、`points_on_path` | points-on-curve 0.2.0、points-on-path 0.2.1 |
 | `.../hachure` | `hachure_lines`（扫描线填充） | hachure-fill 0.5.2 |
 | `.../geometry` | 可变的 `Point` | roughjs `geometry.ts` |
-| `.../jsmath` | 和 V8 逐位一致的 `sin` / `cos`、`Math.round`、`toFixed`、`Number#toString`、`parseFloat`、`Math.min/max` | — |
+| `.../jsmath` | 和 V8 逐位一致的 `sin` / `cos` / `tan` / `asin` / `atan`、`Math.round`、`toFixed`、`Number#toString`、`parseFloat`、`Math.min/max` | — |
 
 ### API 对照
 
@@ -97,7 +97,7 @@ fn main {
 
 - **随机数顺序。** rough.js 很多地方在一个表达式或参数列表里多次取随机数，JS 从左到右求值，差一次后面就全错。移植时每次取随机数都单独写成一条语句，按 JS 的求值顺序排列（例如 `_bezierTo` 里终点的随机数先于控制点，ellipse 的 `_offset(0.1, _offset(0.4, 1, o), o)` 内层先算）。fixture 生成器包装了 `Math.imul`（bundle 里只有 `Random.next` 用它）和 `Math.random`，记录每个用例取了多少个随机数，测试先比较次数，再比较数值。
 - **对象共享语义。** rough.js 的随机数生成器懒创建在 options 对象上；`{ ...o }` 复制时，已存在的会被共享，还不存在的则各自新建；`cloneOptionsAlterSeed` 用 seed + 1 重新开始；不传 options 时，所有图形共用生成器的默认 options 对象，随机状态跨调用延续。MoonBit 里带 `mut` 字段的 struct 是引用类型，`{ ..o, f: v }` 复制的是指针，行为和 JS 相同。点也是可变的引用对象，JS 共享数组的地方 MoonBit 也共享（比如 `simplify` 对单点集合返回 `[p, p]`，hachure 会把它旋转两次）。
-- **浮点函数。** native 后端上，core 的 `sin` / `cos` 调用 C 库，约 2.5% 的参数与 V8 差 1 ulp。这种差别会翻转离散判断（循环终止、`Math.round`、ceil / floor 计数、`toFixed(9)`），使 op 数量都对不上。所以 `jsmath` 在 native 上改用 fdlibm 算法（与 V8 和 core 的 wasm 实现相同）。另外按 ECMAScript 规范精确实现了 `toFixed`、`Math.round`、`Math.min/max`（含 NaN 和 ±0 的处理），并验证了 `Math.pow(x, 2) === x * x`、`%` 与 JS 一致。
+- **浮点函数。** native 后端上，core 的 `sin` / `cos` 调用 C 库，约 2.5% 的参数与 V8 差 1 ulp；js 后端调用宿主 `Math`，在 arm64 上也差 1 ulp。这种差别会翻转离散判断（循环终止、`Math.round`、ceil / floor 计数、`toFixed(9)`），使 op 数量都对不上。所以 `jsmath` 在 js 和 native 上改用 fdlibm 算法（与 V8 和 core 的 wasm 实现相同）。另外按 ECMAScript 规范精确实现了 `toFixed`、`Math.round`、`Math.min/max`（含 NaN 和 ±0 的处理），并验证了 `Math.pow(x, 2) === x * x`、`%` 与 JS 一致。
 
 ## 测试
 
@@ -124,7 +124,7 @@ moon test --target native
 
 比较方式：shape 名、OpSet 类型、每个 OpSet 的 op 类型序列、随机数调用次数必须完全一致；坐标要求 `|a − b| ≤ 1e-9 × max(1, |b|)`。这个容差只是保险：正常情况下所有运算都是相同顺序的 IEEE 基本运算，结果应逐位相同；而随机数顺序出错造成的偏差在 roughness × offset 量级（0.1–2），1e-9 不可能把它掩盖。
 
-**js 后端依赖运行它的 Node。** js 后端直接调用宿主的 `Math.sin / cos / tan`，这些函数的最后一位在不同 V8 版本之间可能不同（rough.js 自己也一样），圆弧转贝塞尔这类对微小差异敏感的路径会把它放大到 1e-7 量级。所以 fixtures 是用 Node 24 生成的，js 测试也请用 Node 24 跑；CI 里每个跑 js 测试的任务都固定了 Node 24。wasm-gc 和 native 用 MoonBit 自带的 fdlibm 实现，不受 Node 版本影响。fixtures 里的 NaN 统一写成标准的 `7ff8000000000000`，因为 NaN 的低位同样随 V8 版本变化。
+**三角函数不依赖宿主。** ECMAScript 只要求 `Math.sin / cos / tan / asin / atan` 近似正确，最后一位在不同 V8 版本和 CPU 架构上可能不同：CI 里 macOS arm64 的 Node 24 算 `tan(1e22)` 就和 x64 差 1 ulp，圆弧转贝塞尔这类对微小差异敏感的路径会把它放大到 1e-7 量级。所以这五个函数在四个后端上都用同一份 fdlibm 代码（js 和 native 用 `src/jsmath/fdlibm.mbt`，wasm 和 wasm-gc 用 core 里的 fdlibm 实现），生成的 JS 里没有对宿主 `Math.sin` 等函数的调用，结果不随运行环境变化，等于 rough.js 在 Node 24 / x64 上的结果，fixtures 就是在那里生成的。fdlibm 也是 V8 自己的实现。剩下的 `Math.abs`、`sqrt`、`floor`、`ceil` 是 IEEE 精确运算，各处一致。fixtures 里的 NaN 统一写成标准的 `7ff8000000000000`，因为 NaN 的低位随 V8 版本变化。
 
 ### 误差报告
 
@@ -143,10 +143,11 @@ moon test --target native
 | curve simplify | 7796 | 0 (0 inexact) | 0 (0 inexact) | 0 (0 inexact) |
 | hachure | 994388 | 0 (0 inexact) | 0 (0 inexact) | 0 (0 inexact) |
 | jsmath trig | 28085 | 0 (0 inexact) | 0 (0 inexact) | 0 (0 inexact) |
+| jsmath trig edge cases | 12200 | 0 (0 inexact) | 0 (0 inexact) | 0 (0 inexact) |
 | path_data | 43038 | 0 (0 inexact) | 0 (0 inexact) | 0 (0 inexact) |
 | random | 13000 | 0 (0 inexact) | 0 (0 inexact) | 0 (0 inexact) |
 
-共比较 2,045,923 个值，**三个后端的最大误差都是 0**（moon 0.1.20261016 / moonc v0.10.16，Windows 11，Node 24.20）。
+共比较 2,058,123 个值，**三个后端的最大误差都是 0**（moon 0.1.20261016 / moonc v0.10.16，Windows 11，Node 24.20）。
 
 CI 用同一版本的 toolchain（`0.10.16+b1a0e846e`）跑 check（不允许警告）、`moon fmt --check`、`moon build --target all`、`moon info` 后的接口文件检查，以及三个后端的测试。不同版本的 `moon fmt` 输出不同，所以格式只按这个版本检查。另外有三个任务：
 
@@ -182,4 +183,4 @@ cd scripts && npm ci && npm run gen
 | [points-on-curve](https://github.com/pshihn/bezier-points) | 0.2.0 | MIT | Preet Shihn |
 | [points-on-path](https://github.com/pshihn/points-on-path) | 0.2.1 | MIT | Preet Shihn |
 
-移植范围：上述五个包中由 `rough.generator()` 使用的全部代码（不含 Canvas 与 DOM 部分）。`src/jsmath/trig_native.mbt` 的 sin / cos 改编自 moonbitlang/core（Apache-2.0），其算法源自 fdlibm（Sun Microsystems 的许可声明），两者的声明同样收录在 THIRD_PARTY_LICENSES 中。测试 fixtures 是用上述 MIT 软件生成的输出数据。
+移植范围：上述五个包中由 `rough.generator()` 使用的全部代码（不含 Canvas 与 DOM 部分）。`src/jsmath/fdlibm.mbt` 的 sin / cos / tan / asin / atan 改编自 moonbitlang/core（Apache-2.0），其算法源自 fdlibm（Sun Microsystems 的许可声明），两者的声明同样收录在 THIRD_PARTY_LICENSES 中。测试 fixtures 是用上述 MIT 软件生成的输出数据。

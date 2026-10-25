@@ -1,9 +1,15 @@
-// fdlibm sine / cosine, compiled only for the native backend.
+// fdlibm sine, cosine, tangent, arc sine and arc tangent, compiled for the
+// js and native backends.
 //
-// On native, moonbitlang/core's @math.sin / @math.cos call the C library,
-// whose results differ from V8's Math.sin / Math.cos in the last bit for a
-// few percent of the inputs. V8 (and core on wasm / wasm-gc) use fdlibm, so
-// this file carries the fdlibm algorithm to make native bit-identical too.
+// JavaScript's Math.sin / cos / tan / asin / atan are specified only up to
+// "implementation-approximated", and the last bit differs between V8
+// versions and CPU architectures (Node 24 on arm64 gives a different
+// tan(1e22) than on x64). On js, calling the host would therefore make the
+// results depend on where the program runs; on native, moonbitlang/core's
+// sin / cos call the C library, which differs from V8 in the last bit for a
+// few percent of the inputs. This file carries the fdlibm algorithm that V8
+// (and core on wasm / wasm-gc) use, so every backend gives the same bits as
+// rough.js running on Node 24 / x64, which is where the fixtures come from.
 //
 // Adapted from moonbitlang/core (math/trig_double_nonjs.mbt, math/utils.mbt,
 // math/trig_double_sincos_non_native_or_js.mbt), Copyright 2026 International
@@ -18,8 +24,8 @@
 // is preserved.
 // ====================================================
 //
-// See THIRD_PARTY_LICENSES. Changes: kept only what sin / cos need and
-// replaced the internal scalbn by @math.scalbn.
+// See THIRD_PARTY_LICENSES. Changes: kept only what these five functions
+// need and replaced the internal scalbn by @math.scalbn.
 
 ///|
 /// Sine, bit-identical to JavaScript's `Math.sin`.
@@ -601,4 +607,250 @@ fn get_high_word(x : Double) -> UInt32 {
 ///|
 fn get_low_word(x : Double) -> UInt32 {
   x.reinterpret_as_uint64().to_uint()
+}
+
+///|
+/// Tangent, bit-identical to JavaScript's `Math.tan`.
+pub fn tan(x : Double) -> Double {
+  if x.is_inf() || x.is_nan() {
+    return @double.not_a_number
+  }
+  let y = Array::make(2, 0.0)
+  let z = 0.0
+  if x.abs() <= PI_OVER_4 {
+    __kernal_tan(x, z, 1)
+  } else {
+    let n = rem_pio2(x, y)
+    __kernal_tan(y[0], y[1], 1 - ((n & 1) << 1))
+  }
+}
+
+///|
+/// Arc sine, bit-identical to JavaScript's `Math.asin`.
+pub fn asin(x : Double) -> Double {
+  let huge = 1.0e+300
+  let pio4_hi = 7.85398163397448278999e-01
+  let pio2_hi = 1.57079632679489655800
+  let pio2_lo = 6.12323399573676603587e-17
+  let ps0 = 1.66666666666666657415e-01
+  let ps1 = -3.25565818622400915405e-01
+  let ps2 = 2.01212532134862925881e-01
+  let ps3 = -4.00555345006794114027e-02
+  let ps4 = 7.91534994289814532176e-04
+  let ps5 = 3.47933107596021167570e-05
+  let qs1 = -2.40339491173441421878e+00
+  let qs2 = 2.02094576023350569471e+00
+  let qs3 = -6.88283971605453293030e-01
+  let qs4 = 7.70381505559019352791e-02
+  let ix = get_high_word(x).reinterpret_as_int() & 0x7fffffff
+  let absx = x.abs()
+  if absx >= 1.0 {
+    if absx == 1.0 {
+      return x * pio2_hi + x * pio2_lo
+    } else {
+      return @double.not_a_number
+    }
+  } else if absx < 0.5 {
+    if ix < 0x3e400000 {
+      if huge + x > 1.0 {
+        return x
+      }
+    } else {
+      let t = x * x
+      let p = t *
+        (ps0 + t * (ps1 + t * (ps2 + t * (ps3 + t * (ps4 + t * ps5)))))
+      let q = 1.0 + t * (qs1 + t * (qs2 + t * (qs3 + t * qs4)))
+      let w = p / q
+      return x + x * w
+    }
+  }
+  let w = 1.0 - absx
+  let t = w * 0.5
+  let p = t * (ps0 + t * (ps1 + t * (ps2 + t * (ps3 + t * (ps4 + t * ps5)))))
+  let q = 1.0 + t * (qs1 + t * (qs2 + t * (qs3 + t * qs4)))
+  let s = t.sqrt()
+  if ix >= 0x3FEF3333 {
+    let w = p / q
+    let t = pio2_hi - (2.0 * (s + s * w) - pio2_lo)
+    return if x > 0.0 { t } else { -t }
+  } else {
+    let mut w = s
+    w = set_low_word(w, 0)
+    let c = (t - w * w) / (s + w)
+    let r = p / q
+    let p = 2.0 * s * r - (pio2_lo - 2.0 * c)
+    let q = pio4_hi - 2.0 * w
+    let t = pio4_hi - (p - q)
+    return if x > 0.0 { t } else { -t }
+  }
+}
+
+///|
+/// Arc tangent, bit-identical to JavaScript's `Math.atan`.
+pub fn atan(x : Double) -> Double {
+  if x.is_nan() || x == 0.0 {
+    return x
+  }
+  let atan_hi : ReadOnlyArray[Double] = [
+    4.63647609000806093515e-01, 7.85398163397448278999e-01, 9.82793723247329054082e-01,
+    1.57079632679489655800e+00,
+  ]
+  let atan_lo : ReadOnlyArray[Double] = [
+    2.26987774529616870924e-17, 3.06161699786838301793e-17, 1.39033110312309984516e-17,
+    6.12323399573676603587e-17,
+  ]
+  let a_t : ReadOnlyArray[Double] = [
+    3.33333333333329318027e-01, -1.99999999998764832476e-01, 1.42857142725034663711e-01,
+    -1.11111104054623557880e-01, 9.09088713343650656196e-02, -7.69187620504482999495e-02,
+    6.66107313738753120669e-02, -5.83357013379057348645e-02, 4.97687799461593236017e-02,
+    -3.65315727442169155270e-02, 1.62858201153657823623e-02,
+  ]
+  let one = 1.0
+  let huge = 1.0e300
+  let ix = get_high_word(x).reinterpret_as_int() & 0x7fffffff
+  let mut id = 0
+  let mut z = 0.0
+  let mut w = 0.0
+  let mut x = x
+  let x_is_neg = x < 0.0
+  if ix >= 0x44100000 {
+    if x > 0 {
+      return atan_hi[3] + atan_lo[3]
+    } else {
+      return -atan_hi[3] - atan_lo[3]
+    }
+  }
+  if ix < 0x3fdc0000 {
+    if ix < 0x3e200000 {
+      if huge + x > one {
+        return x
+      }
+    }
+    id = -1
+  } else {
+    x = x.abs()
+    if ix < 0x3ff30000 {
+      if ix < 0x3fe60000 {
+        id = 0
+        x = (2.0 * x - one) / (2.0 + x)
+      } else {
+        id = 1
+        x = (x - one) / (x + one)
+      }
+    } else if ix < 0x40038000 {
+      id = 2
+      x = (x - 1.5) / (one + 1.5 * x)
+    } else {
+      id = 3
+      x = -1.0 / x
+    }
+  }
+  z = x * x
+  w = z * z
+  let s1 = z *
+    (
+      a_t[0] +
+      w * (a_t[2] + w * (a_t[4] + w * (a_t[6] + w * (a_t[8] + w * a_t[10]))))
+    )
+  let s2 = w *
+    (a_t[1] + w * (a_t[3] + w * (a_t[5] + w * (a_t[7] + w * a_t[9]))))
+  if id < 0 {
+    x - x * (s1 + s2)
+  } else {
+    z = atan_hi[id] - (x * (s1 + s2) - atan_lo[id] - x)
+    if x_is_neg {
+      -z
+    } else {
+      z
+    }
+  }
+}
+
+///|
+fn __kernal_tan(x : Double, y : Double, iy : Int32) -> Double {
+  let one = 1.0
+  let pio4 = 7.85398163397448278999e-01
+  let pio4lo = 3.06161699786838301793e-17
+  let mut x = x
+  let mut y = y
+  let mut z = 0.0
+  let mut r = 0.0
+  let mut v = 0.0
+  let mut w = 0.0
+  let mut s = 0.0
+  let t : ReadOnlyArray[Double] = [
+    3.33333333333334091986e-01, // 3FD55555, 55555563 */
+     1.33333333333201242699e-01, // 3FC11111, 1110FE7A */
+     5.39682539762260521377e-02, // 3FABA1BA, 1BB341FE */
+     2.18694882948595424599e-02, // 3F9664F4, 8406D637 */
+     8.86323982359930005737e-03, // 3F8226E3, E96E8493 */
+     3.59207910759131235356e-03, // 3F6D6D22, C9560328 */
+     1.45620945432529025516e-03, // 3F57DBC8, FEE08315 */
+     5.88041240820264096874e-04, // 3F4344D8, F2F26501 */
+     2.46463134818469906812e-04, // 3F3026F7, 1A8D1068 */
+     7.81794442939557092300e-05, // 3F147E88, A03792A6 */
+     7.14072491382608190305e-05, // 3F12B80F, 32F0A7E9 */
+     -1.85586374855275456654e-05, // BEF375CB, DB605373 */
+     2.59073051863633712884e-05, // 3EFB2A70, 74BF7AD4 */
+     1.00000000000000000000e+00, // 3FF00000, 00000000 (one) */
+     7.85398163397448278999e-01, // 3FE921FB, 54442D18 (pio4) */
+     3.06161699786838301793e-17, // 3C81A626, 33145C07 (pio4lo) */
+  ]
+  let hx = get_high_word(x).reinterpret_as_int()
+  let ix = hx & 0x7fffffff
+  if ix < 0x3e300000 {
+    if x.to_int() == 0 {
+      if (ix | get_low_word(x).reinterpret_as_int() | (iy + 1)) == 0 {
+        return one / x.abs()
+      } else if iy == 1 {
+        return x
+      } else {
+        w = x + y
+        z = w
+        z = set_low_word(z, 0)
+        v = y - (z - x)
+        let a = -one / w
+        let mut t = a
+        t = set_low_word(t, 0)
+        s = one + t * z
+        return t + a * (s + t * v)
+      }
+    }
+  }
+  if ix >= 0x3fe59428 {
+    if hx < 0 {
+      x = -x
+      y = -y
+    }
+    z = pio4 - x
+    w = pio4lo - y
+    x = z + w
+    y = 0.0
+  }
+  z = x * x
+  w = z * z
+  r = t[1] + w * (t[3] + w * (t[5] + w * (t[7] + w * (t[9] + w * t[11]))))
+  v = z *
+    (t[2] + w * (t[4] + w * (t[6] + w * (t[8] + w * (t[10] + w * t[12])))))
+  s = z * x
+  r = y + z * (s * (r + v) + y)
+  r += t[0] * s
+  w = x + r
+  if ix >= 0x3fe59428 {
+    v = iy.to_double()
+    return (1 - ((hx >> 30) & 2)).to_double() *
+      (v - 2.0 * (x - (w * w / (w + v) - r)))
+  }
+  if iy == 1 {
+    w
+  } else {
+    z = w
+    z = set_low_word(z, 0)
+    v = r - (z - x)
+    let a = -1.0 / w
+    let mut t = a
+    t = set_low_word(t, 0)
+    s = 1.0 + t * z
+    t + a * (s + t * v)
+  }
 }

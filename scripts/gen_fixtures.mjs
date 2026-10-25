@@ -209,6 +209,36 @@ generators.push({
       Math.atan(x), Math.asin(Math.max(-1, Math.min(1, x / 10))),
       Math.max(-1, Math.min(1, x / 10))]));
 
+    // Special values and the thresholds of the fdlibm branches, with their
+    // neighbours one ulp up and down. Every function is applied to the value
+    // itself (asin and atan outside their usual ranges give NaN or +-pi/2).
+    const neighbours = (x) => {
+      if (!Number.isFinite(x) || x === 0) return [x];
+      f64[0] = x;
+      const bits = u64[0];
+      const out = [x];
+      for (const d of [-1n, 1n]) {
+        u64[0] = bits + d;
+        out.push(f64[0]);
+      }
+      return out;
+    };
+    const thresholds = [0, -0, Infinity, -Infinity, NaN, 5e-324, 2 ** -1074, 2 ** -1022, 2 ** -29,
+      2 ** -28, 2 ** -27, 1e-9, 0.4375, 0.5, 0.6875, 0.6744, 1, 1.1875, 1.5, 2.4375, 3, 2 ** 66,
+      2 ** 53, 1e22, 2 ** 1023, 1.7976931348623157e308, 1647099.3, 2 ** 19 * Math.PI / 2];
+    for (let k = -12; k <= 12; k++) thresholds.push(k * Math.PI / 2, k * Math.PI / 4);
+    const edgeInputs = [];
+    for (const t of thresholds) {
+      for (const sign of [1, -1]) edgeInputs.push(...neighbours(sign * t));
+    }
+    // A generator of its own, so that adding cases here leaves the inputs of
+    // the other jsmath fixtures (drawn from rng below) unchanged.
+    const edgeRng = inputRng(424242);
+    for (let i = 0; i < 1500; i++) edgeInputs.push((edgeRng() - 0.5) * 2); // asin's domain
+    for (let i = 0; i < 500; i++) edgeInputs.push((edgeRng() - 0.5) * 6); // atan's branches
+    const trigEdge = edgeInputs.map((x) => hexList([x, Math.sin(x), Math.cos(x), Math.tan(x),
+      Math.atan(x), Math.asin(x)]));
+
     const roundInputs = [0.5, -0.5, 1.5, -1.5, 2.5, -2.5, 0.49999999999999994,
       -0.49999999999999994, -0, 0, 4503599627370495.5, 4503599627370497, -4503599627370497,
       1e300, -1e-300, NaN, Infinity, -Infinity];
@@ -260,6 +290,7 @@ generators.push({
     const pow2 = angles.concat(fixedInputs).map((x) => hexList([x, Math.pow(x, 2)]));
 
     writeFixture('jsmath', 'jsmath_fixtures_test.mbt', {
+      trig_edge_fixtures: trigEdge,
       min_max_fixtures: minMax,
       pow2_fixtures: pow2,
       trig_fixtures: trig,
