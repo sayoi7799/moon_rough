@@ -12,7 +12,7 @@ pub fn drawable_to_svg(@core.Drawable) -> String
 
 pub fn generator(options? : @core.Options, source? : @random.RandomSource) -> @core.Generator
 
-pub fn ops_to_path(@core.OpSet, fixed_decimals? : Int) -> String
+pub fn ops_to_path(@core.OpSet, fixed_decimals? : Int32) -> String
 
 pub fn svg_document(Double, Double, String, background? : String) -> String
 

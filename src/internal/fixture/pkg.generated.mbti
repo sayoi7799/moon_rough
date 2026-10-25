@@ -17,8 +17,8 @@ pub fn same(Double, Double) -> Bool
 // Types and methods
 pub struct ErrorStats {
   name : String
-  mut compared : Int
-  mut inexact : Int
+  mut compared : Int32
+  mut inexact : Int32
   mut max_abs : Double
   mut max_rel : Double
 }

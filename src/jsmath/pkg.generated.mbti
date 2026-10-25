@@ -24,7 +24,7 @@ pub fn sin(Double) -> Double
 
 pub fn tan(Double) -> Double
 
-pub fn to_fixed(Double, Int) -> String
+pub fn to_fixed(Double, Int32) -> String
 
 // Errors
 

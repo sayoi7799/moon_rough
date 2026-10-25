@@ -34,7 +34,7 @@ fn distance_to_segment_sq(p : Point, v : Point, w : Point) -> Double {
 }
 
 ///|
-fn flatness(points : Array[Point], offset : Int) -> Double {
+fn flatness(points : Array[Point], offset : Int32) -> Double {
   let p1 = points[offset + 0]
   let p2 = points[offset + 1]
   let p3 = points[offset + 2]
@@ -59,7 +59,7 @@ fn flatness(points : Array[Point], offset : Int) -> Double {
 ///|
 fn points_on_bezier_curve_with_splitting(
   points : Array[Point],
-  offset : Int,
+  offset : Int32,
   tolerance : Double,
   out_points : Array[Point],
 ) -> Unit {
@@ -117,8 +117,8 @@ pub fn simplify(points : Array[Point], distance : Double) -> Array[Point] {
 ///|
 fn simplify_points(
   points : Array[Point],
-  start : Int,
-  end : Int,
+  start : Int32,
+  end : Int32,
   epsilon : Double,
   out_points : Array[Point],
 ) -> Unit {
@@ -153,7 +153,7 @@ fn simplify_points(
 /// is given and positive.
 pub fn points_on_bezier_curves(
   points : Array[Point],
-  tolerance? : Double = 0.15,
+  tolerance~ : Double = 0.15,
   distance? : Double,
 ) -> Array[Point] {
   let new_points = []
@@ -186,7 +186,7 @@ pub(all) suberror CurveTooShort derive(Debug)
 /// Catmull-Rom-like curve rough.js draws through `points_in`.
 pub fn curve_to_bezier(
   points_in : Array[Point],
-  curve_tightness? : Double = 0.0,
+  curve_tightness~ : Double = 0.0,
 ) -> Array[Point] raise CurveTooShort {
   let len = points_in.length()
   if len < 3 {

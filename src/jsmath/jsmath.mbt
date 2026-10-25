@@ -49,7 +49,7 @@ pub fn number_to_string(x : Double) -> String {
 /// go to the larger magnitude, and numbers >= 1e21 use `number_to_string`.
 /// `digits` is clamped to `[0, 100]` (JavaScript throws a RangeError
 /// outside that range).
-pub fn to_fixed(x : Double, digits : Int) -> String {
+pub fn to_fixed(x : Double, digits : Int32) -> String {
   if x.is_nan() {
     return "NaN"
   }
@@ -102,7 +102,7 @@ pub fn to_fixed(x : Double, digits : Int) -> String {
 }
 
 ///|
-fn pow10(n : Int) -> @bigint.BigInt {
+fn pow10(n : Int32) -> @bigint.BigInt {
   let ten = @bigint.BigInt::from_int(10)
   let mut r = @bigint.BigInt::from_int(1)
   for _ in 0..<n {
