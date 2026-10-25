@@ -6,24 +6,6 @@
 pub const PI : Double = 3.141592653589793
 
 ///|
-/// `Math.tan`. moonbitlang/core uses fdlibm on every backend but js.
-pub fn tan(x : Double) -> Double {
-  @math.tan(x)
-}
-
-///|
-/// `Math.atan`.
-pub fn atan(x : Double) -> Double {
-  @math.atan(x)
-}
-
-///|
-/// `Math.asin`.
-pub fn asin(x : Double) -> Double {
-  @math.asin(x)
-}
-
-///|
 /// `Math.round`: rounds half-way cases towards +Infinity and keeps the sign
 /// of zero (`Math.round(-0.4)` is `-0`).
 pub fn round(x : Double) -> Double {

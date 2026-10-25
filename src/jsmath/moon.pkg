@@ -11,7 +11,7 @@ import {
 
 options(
   targets: {
-    "trig_native.mbt": [ "native" ],
-    "trig_portable.mbt": [ "not", "native" ],
+    "fdlibm.mbt": [ "js", "native" ],
+    "trig_portable.mbt": [ "wasm", "wasm-gc" ],
   },
 )

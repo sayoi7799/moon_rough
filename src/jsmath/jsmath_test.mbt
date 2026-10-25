@@ -108,3 +108,18 @@ test "Math.pow(x, 2) is x * x" {
     assert_true(@fixture.same(v[0] * v[0], v[1]), msg="pow(\{v[0]}, 2)")
   }
 }
+
+///|
+test "special values and fdlibm branch thresholds are bit-identical to Node" {
+  let stats = @fixture.ErrorStats::new("jsmath trig edge cases")
+  for entry in trig_edge_fixtures {
+    let v = @fixture.hex_list(entry)
+    let x = v[0]
+    check_bits(stats, "sin", x, @jsmath.sin(x), v[1])
+    check_bits(stats, "cos", x, @jsmath.cos(x), v[2])
+    check_bits(stats, "tan", x, @jsmath.tan(x), v[3])
+    check_bits(stats, "atan", x, @jsmath.atan(x), v[4])
+    check_bits(stats, "asin", x, @jsmath.asin(x), v[5])
+  }
+  println(stats.summary())
+}
