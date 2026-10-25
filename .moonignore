@@ -1,0 +1,13 @@
+# Local notes and drafts, not part of the package.
+moon_rough.md
+moon_vegalite.md
+PROPOSAL.md
+
+# Same as .gitignore (moon reads only .moonignore when it exists).
+_build/
+target/
+.mooncakes/
+.moonagent/
+node_modules/
+*.log
+/examples/

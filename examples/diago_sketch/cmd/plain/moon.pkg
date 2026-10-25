@@ -1,0 +1,8 @@
+import {
+  "moonbit-community/diago",
+  "sayoi7799/diago_sketch/demo_diagram",
+}
+
+supported_targets = "all"
+
+pkgtype(kind: "executable")

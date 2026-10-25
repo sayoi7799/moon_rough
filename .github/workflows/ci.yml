@@ -153,6 +153,57 @@ jobs:
       - name: Fixtures match the repository
         run: git diff --exit-code
 
+  # examples/diago_sketch is a module of its own (it depends on diago and on
+  # the published moon_rough), so the jobs above do not see it.
+  diago-sketch:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: examples/diago_sketch
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+
+      - name: Install MoonBit ${{ env.MOONBIT_VERSION }}
+        run: |
+          curl -fsSL https://cli.moonbitlang.com/install/unix.sh | bash -s "$MOONBIT_VERSION"
+          echo "$HOME/.moon/bin" >> "$GITHUB_PATH"
+
+      - name: Update the registry index
+        run: moon update
+
+      - name: Check
+        run: moon check --deny-warn
+
+      - name: Format
+        run: moon fmt --check
+
+      - name: Interfaces are up to date
+        run: |
+          moon info
+          git diff --exit-code -- '*.mbti'
+
+      - name: Test (js)
+        run: moon test --target js
+
+      - name: Test (wasm-gc)
+        run: moon test --target wasm-gc
+
+      - name: Test (native)
+        run: moon test --target native
+
+      - name: The demo SVGs are reproducible on every backend
+        run: |
+          for target in js wasm-gc native; do
+            moon run cmd/plain --target "$target" > plain.generated.svg
+            moon run cmd/sketch --target "$target" > sketch.generated.svg
+            diff -q demo.svg plain.generated.svg
+            diff -q demo-sketch.svg sketch.generated.svg
+          done
+
   # Early warning for the latest release; does not fail the workflow.
   latest:
     runs-on: ubuntu-latest

@@ -1,0 +1,10 @@
+import {
+  "sayoi7799/moon_rough",
+  "moonbitlang/core/string",
+}
+
+import {
+  "moonbit-community/diago",
+} for "test"
+
+supported_targets = "all"
