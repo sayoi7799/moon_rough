@@ -146,7 +146,13 @@ moon test --target native
 
 共比较 2,045,923 个值，**三个后端的最大误差都是 0**（moon 0.1.20261016 / moonc v0.10.16，Windows 11，Node 24.20）。
 
-CI 用同一版本的 toolchain（`0.10.16+b1a0e846e`）跑 check、`moon fmt --check` 和三个后端的测试；不同版本的 `moon fmt` 输出不同，所以格式只按这个版本检查。另有一个不阻塞的任务用最新版 MoonBit 跑 check 和测试，用来提前发现兼容性问题。
+CI 用同一版本的 toolchain（`0.10.16+b1a0e846e`）跑 check（不允许警告）、`moon fmt --check`、`moon build --target all`、`moon info` 后的接口文件检查，以及三个后端的测试。不同版本的 `moon fmt` 输出不同，所以格式只按这个版本检查。另外有三个任务：
+
+- 用 `scripts/package-lock.json` 锁定的 roughjs 4.6.6 重新生成 fixtures，和仓库里的比较，必须完全一致；
+- 在 macOS（arm64）和 Windows 上跑同样的测试，暂时不阻塞，因为 clang 可能把 `a * b + c` 合并成 FMA，需要先看一轮结果；
+- 用最新版 MoonBit 跑 check 和测试，提前发现兼容性问题，同样不阻塞。
+
+版本变化见 [CHANGELOG.md](CHANGELOG.md)。
 
 ## 重新生成 fixtures
 
