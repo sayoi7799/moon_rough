@@ -1,0 +1,26 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "sayoi7799/moon_rough/internal/shapecase"
+
+import {
+  "sayoi7799/moon_rough/core",
+  "sayoi7799/moon_rough/random",
+}
+
+// Values
+pub const FALLBACK_SEED : Int32 = 1234567
+
+pub fn call_shape(@core.Generator, StringView, StringView, @core.Options?) -> @core.Drawable raise
+
+pub fn decode_options(StringView) -> @core.Options? raise
+
+pub fn decode_point_list(StringView) -> Array[(Double, Double)]
+
+pub fn fixture_generator(StringView) -> (@core.Generator, @random.RandomSource) raise
+
+// Errors
+
+// Types and methods
+
+// Type aliases
+
+// Traits

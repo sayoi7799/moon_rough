@@ -9,6 +9,7 @@ import {
 
 import {
   "sayoi7799/moon_rough/internal/fixture",
+  "sayoi7799/moon_rough/internal/shapecase",
   "moonbitlang/core/string",
   "sayoi7799/moon_rough/random",
   "sayoi7799/moon_rough/path_data",
