@@ -1,0 +1,17 @@
+import {
+  "sayoi7799/moon_rough/canvas",
+  "sayoi7799/moon_rough/core",
+  "sayoi7799/moon_rough/random",
+  "moonbitlang/core/json",
+}
+
+supported_targets = "js"
+
+options(
+  link: {
+    "js": {
+      "exports": [ "draw:draw", "generate:generate", "version:version" ],
+      "format": "esm",
+    },
+  },
+)

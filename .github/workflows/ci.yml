@@ -204,6 +204,38 @@ jobs:
             diff -q demo-sketch.svg sketch.generated.svg
           done
 
+  # The browser demo: the page ships a copy of rough.js, which must be the
+  # package the fixtures come from, and its exported functions must agree
+  # with the official rough.js (Node 24 on x64 is the reference).
+  web:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+
+      - name: Install MoonBit ${{ env.MOONBIT_VERSION }}
+        run: |
+          curl -fsSL https://cli.moonbitlang.com/install/unix.sh | bash -s "$MOONBIT_VERSION"
+          echo "$HOME/.moon/bin" >> "$GITHUB_PATH"
+
+      - name: Install the pinned rough.js
+        working-directory: scripts
+        run: npm ci --ignore-scripts
+
+      - name: The page's rough.js is the pinned npm bundle
+        run: |
+          cmp scripts/node_modules/roughjs/bundled/rough.js examples/web/vendor/rough.js
+          cmp scripts/node_modules/roughjs/LICENSE examples/web/vendor/LICENSE
+
+      - name: Build the demo
+        run: node examples/web/build.mjs
+
+      - name: moon_rough and rough.js agree
+        run: node examples/web/test.mjs
+
   # Early warning for the latest release; does not fail the workflow.
   latest:
     runs-on: ubuntu-latest

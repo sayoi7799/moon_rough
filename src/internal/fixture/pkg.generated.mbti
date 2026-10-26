@@ -4,6 +4,8 @@ package "sayoi7799/moon_rough/internal/fixture"
 // Values
 pub const TOLERANCE : Double = 1.0e-9
 
+pub fn double_to_hex(Double) -> String
+
 pub fn fields(String) -> Array[StringView]
 
 pub fn hex_list(StringView) -> Array[Double]

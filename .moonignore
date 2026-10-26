@@ -11,3 +11,4 @@ target/
 node_modules/
 *.log
 /examples/
+/src/examples/web_demo/
