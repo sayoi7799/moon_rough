@@ -12,6 +12,10 @@ reproduced below as required by their licenses.
   * points-on-curve 0.2.0    https://github.com/pshihn/bezier-points      MIT
   * points-on-path 0.2.1     https://github.com/pshihn/points-on-path     MIT
 
+The demo page in examples/web distributes an unmodified copy of the roughjs
+4.6.6 browser bundle (bundled/rough.js) with its license, in
+examples/web/vendor/.
+
 The sine, cosine, tangent, arc sine and arc tangent routines in src/jsmath
 (used on the js and native backends so that their results are bit-identical
 to V8's Math functions) are adapted from the MoonBit core library

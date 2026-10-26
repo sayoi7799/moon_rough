@@ -81,6 +81,44 @@ let sketch = @diago_sketch.sketchify(svg, seed=7)
 
 同样的输入和 seed，输出逐字节相同，js、wasm-gc、native 上都一样（CI 逐一比对提交的 SVG）。它不是发布模块的一部分，因为要依赖 diago 和它的一批依赖；详细说明和限制见 [它的 README](examples/diago_sketch/README.md)。
 
+## Canvas 后端和浏览器演示页
+
+`sayoi7799/moon_rough/canvas` 对应 rough.js 的 `RoughCanvas`：
+
+```moonbit
+// js 目标。ctx 是 JavaScript 传进来的 canvas.getContext("2d")
+pub fn paint(ctx : @canvas.JsContext) -> Unit {
+  let rc = @canvas.RoughCanvas::new(ctx, options=@moon_rough.Options::new(seed=42))
+  ignore(
+    rc.rectangle(
+      10.0, 10.0, 200.0, 100.0,
+      options=@moon_rough.Options::new(fill="#e76f51", fill_style=CrossHatch),
+    ),
+  )
+}
+```
+
+- 绘制逻辑 `draw(ctx, drawable)` 按 canvas.js 逐句对应，写在 `Canvas2D` trait 上（`save`、`restore`、`beginPath`、`moveTo`、`lineTo`、`bezierCurveTo`、`stroke`、`fill` 和描边 / 填充 / 线宽 / 虚线属性），在所有目标上都能编译。
+- `JsContext` 是它在 js 目标上的绑定（`extern "js"` 调用 `CanvasRenderingContext2D`）。`Recorder` 是另一个实现，只记录调用，测试用的就是它。
+- **wasm-gc 和 native 上没有真正的 canvas 绑定。** wasm-gc 需要宿主提供导入函数，目前没做；trait 让以后补一个实现很容易。
+- **测试**：预期值来自官方 rough.js。`scripts/gen_fixtures.mjs` 用一个会记录每次方法调用和属性赋值（并且禁止读取任何属性）的假 canvas 运行真正的 `rough.canvas()`，616 个 Drawable、40,147 次调用，顺序和每个数字（按位）都和 MoonBit 一致，三个后端都是。
+
+**浏览器演示页** [`examples/web`](examples/web)：左边调参数（图形、填充样式、roughness、bowing、hachureAngle、hachureGap、strokeWidth、seed、颜色），右边并排显示 moon_rough 和官方 rough.js 4.6.6 画的同一张图，页面实时对比三项：操作序列、每个坐标、每个像素。
+
+在本地打开（需要 MoonBit 工具链和 Node.js 18 以上）：
+
+```bash
+node examples/web/build.mjs
+```
+
+```bash
+node examples/web/serve.mjs
+```
+
+然后访问 http://localhost:8000/ 。第一条命令把 MoonBit 编译成 `examples/web/moon_rough_demo.js`，第二条启动一个不依赖任何包的静态服务器；不能直接双击打开 html，浏览器不允许从 `file://` 加载 ES 模块。换端口：`node examples/web/serve.mjs 8080`。不开浏览器也能检查：`node examples/web/test.mjs` 用 588 组描述对比 `draw` 和 `generate` 与官方 rough.js 的输出，需要先运行 `npm ci`（在 `scripts/` 里）。
+
+**页面上"完全一致"的含义。** 官方 rough.js 用浏览器自己的 `Math.sin / cos / tan`，moon_rough 用 fdlibm，和 Node 24 / x64 上的 rough.js 逐位相同（测试用的就是它）。但较新的浏览器的数学函数最后一位可能不同：我在 Chrome 152（x64 Windows）里把 9 种图形和 8 种填充设置（含不填充）、4 组参数共 288 种组合都试了一遍，191 种逐位一致，另外 97 种（主要是椭圆、圆、扇形，它们用 `sin` / `cos`）有数值差别，最大 1.14e-13，**没有任何一个像素不同，操作序列的结构也全部相同**。页面会如实显示是哪种情况，并给出你的浏览器里 `Math.tan(1e22)` 的值作为参考，不会写死"一致"。Safari 和 Firefox 我没有测过。
+
 ## 支持范围
 
 | 功能 | 状态 |
@@ -91,7 +129,9 @@ let sketch = @diago_sketch.sketchify(svg, seed=7)
 | SVG 路径：M L H V C S Q T A Z 及其相对形式、隐式重复、紧凑数字写法、弧线转三次贝塞尔 | ✅ |
 | 输出：Drawable（OpSet 列表）、SVG 字符串、`opsToPath`、`toPaths` | ✅ |
 | 给 diago 的流程图加手绘风格 | ✅ 示例模块 [`examples/diago_sketch`](examples/diago_sketch)，见下一节 |
-| Canvas 后端、浏览器演示页、动画 | ⏳ 后续阶段 |
+| Canvas 后端（`RoughCanvas`，js 目标） | ✅ `sayoi7799/moon_rough/canvas`，见下一节 |
+| 浏览器演示页：和官方 rough.js 并排对比 | ✅ [`examples/web`](examples/web)，见下一节 |
+| 动画 | ⏳ 后续阶段 |
 
 ## 与 rough.js 的差异
 
@@ -106,7 +146,7 @@ let sketch = @diago_sketch.sketchify(svg, seed=7)
 4. **rough.js 抛异常的输入：** 非法路径数据 `raise PathError`（`InvalidCharacter(偏移)` / `ParamNotANumber` / `EndedShort`）；带图案填充的空 `polygon([])` 不画填充（hachure-fill 会抛 TypeError）；`curve_to_bezier` 少于 3 个点时 `raise CurveTooShort`。
 5. **以 npm 实际加载的 bundle 为准。** `generator.path()` 的第三个 `replace` 在 `bin/` 里是 `'/(\s\s)/g'`，在 `bundled/rough.cjs.js` 里是 `"/(ss)/g"`（都是字符串而非正则，正常路径下都不起作用）。这里照 Node 实际运行的 bundle 实现。
 6. **类型收紧：** `seed` 是 32 位 `Int`（rough.js 接受任意 number）；`fixed_decimal_place_digits` 限制在 0–100（JS 超出范围会抛 RangeError）；`fill_style` 是枚举，`FillStyle::from_name` 和 rough.js 一样，未知名称按 `hachure` 处理。
-7. **未移植：** Canvas 后端（`RoughCanvas`）、DOM 版 `RoughSVG`（改为输出字符串）、`OpSet` 里生成器从不填写的 `size` / `path` 字段，以及 `_curve` 的 `closePoint` 分支（4.6.6 的所有调用方都传 `null`）。
+7. **未移植：** DOM 版 `RoughSVG`（改为输出字符串）、`OpSet` 里生成器从不填写的 `size` / `path` 字段，以及 `_curve` 的 `closePoint` 分支（4.6.6 的所有调用方都传 `null`）。
 8. **roughness < -1 的 path：** points-on-path 会用负的简化距离无限递归，这里同样不支持。
 
 ## 怎么保证一致
@@ -199,4 +239,4 @@ cd scripts && npm ci && npm run gen
 | [points-on-curve](https://github.com/pshihn/bezier-points) | 0.2.0 | MIT | Preet Shihn |
 | [points-on-path](https://github.com/pshihn/points-on-path) | 0.2.1 | MIT | Preet Shihn |
 
-移植范围：上述五个包中由 `rough.generator()` 使用的全部代码（不含 Canvas 与 DOM 部分）。`src/jsmath/fdlibm.mbt` 的 sin / cos / tan / asin / atan 改编自 moonbitlang/core（Apache-2.0），其算法源自 fdlibm（Sun Microsystems 的许可声明），两者的声明同样收录在 THIRD_PARTY_LICENSES 中。测试 fixtures 是用上述 MIT 软件生成的输出数据。
+移植范围：上述五个包中由 `rough.generator()` 使用的全部代码（Canvas 部分只移植了绘制逻辑，见下一节；不含 DOM 部分）。`src/jsmath/fdlibm.mbt` 的 sin / cos / tan / asin / atan 改编自 moonbitlang/core（Apache-2.0），其算法源自 fdlibm（Sun Microsystems 的许可声明），两者的声明同样收录在 THIRD_PARTY_LICENSES 中。测试 fixtures 是用上述 MIT 软件生成的输出数据。
