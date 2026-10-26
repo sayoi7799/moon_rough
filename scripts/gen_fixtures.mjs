@@ -960,6 +960,113 @@ generators.push({
   },
 });
 
+// --- canvas: RoughCanvas on a context that records what it is asked to do ----
+
+const CANVAS_METHODS = new Set(['save', 'restore', 'beginPath', 'moveTo', 'lineTo',
+  'bezierCurveTo', 'stroke', 'fill', 'setLineDash']);
+
+/**
+ * A canvas whose 2D context writes down every method call and every property
+ * assignment, as `name args` lines (numbers as hex bit patterns), and throws
+ * on a property read: RoughCanvas must not read anything back.
+ */
+function recordingCanvas() {
+  const events = [];
+  const ctx = new Proxy({}, {
+    get(_, key) {
+      if (!CANVAS_METHODS.has(key)) throw new Error(`rough.js read ctx.${String(key)}`);
+      return (...args) => {
+        if (key === 'setLineDash') events.push(`setLineDash ${hexList(args[0])}`);
+        else if (key === 'fill') events.push(`fill ${args[0]}`);
+        else events.push([key, ...args.map(hex)].join(' '));
+      };
+    },
+    set(_, key, value) {
+      events.push(`set ${key} ${typeof value === 'number' ? hex(value) : value}`);
+      return true;
+    },
+  });
+  return { events, canvas: { getContext: () => ctx } };
+}
+
+const MAX_CANVAS_CASE = 30000;
+
+/** One entry: `shape|args|options|config|events` (events joined by `;`). */
+function canvasCase({ shape, args, options, config }) {
+  resetRandom();
+  const { events, canvas } = recordingCanvas();
+  const rc = rough.canvas(canvas, config ? { options: config } : undefined);
+  try {
+    callShape(rc, shape, structuredClone(args), options && { ...options });
+  } catch (e) {
+    if (shape !== 'path') throw e;
+    return null;
+  }
+  const fields = [shape, encodeArgs(shape, args), encodeOptions(options), encodeOptions(config)];
+  if (fields.some((f) => f.includes('|'))) throw new Error('| in a field');
+  if (events.some((e) => e.includes('|') || e.includes(';'))) throw new Error('separator in a canvas event');
+  return [...fields, events.join(';')].join('|');
+}
+
+/** Dash and rounding options on top of what randomOptions picks. */
+function randomCanvasOptions(rng) {
+  const o = randomOptions(rng);
+  const dash = () => Array.from({ length: Math.floor(rng() * 4) }, () => 1 + Math.round(rng() * 80) / 10);
+  if (rng() < 0.35) o.strokeLineDash = dash();
+  if (rng() < 0.2) o.strokeLineDashOffset = Math.round((rng() - 0.3) * 100) / 10;
+  if (rng() < 0.3) o.fillLineDash = dash();
+  if (rng() < 0.2) o.fillLineDashOffset = Math.round((rng() - 0.3) * 100) / 10;
+  if (rng() < 0.35) o.fixedDecimalPlaceDigits = Math.floor(rng() * 6) - 1;
+  return o;
+}
+
+generators.push({
+  name: 'canvas',
+  run() {
+    const items = [];
+    const variants = [
+      undefined,
+      { seed: 1 },
+      { seed: 2, stroke: 'none' },
+      { seed: 3, fill: 'red' },
+      { seed: 4, fill: 'blue', fillStyle: 'solid' },
+      { seed: 5, fill: '#0a0', fillStyle: 'zigzag', hachureGap: 9 },
+      { seed: 6, strokeLineDash: [5, 3], strokeLineDashOffset: 2 },
+      { seed: 7, strokeLineDash: [] },
+      { seed: 8, fill: 'purple', fillStyle: 'dashed', fillLineDash: [4, 2], fillLineDashOffset: 1.5, hachureGap: 9 },
+      { seed: 9, fixedDecimalPlaceDigits: 2, fill: 'red', fillStyle: 'solid' },
+      { seed: 10, fixedDecimalPlaceDigits: 0, fill: 'teal', hachureGap: 10 },
+      { seed: 11, fixedDecimalPlaceDigits: -1 },
+      { seed: 12, strokeLineDashOffset: 0, fillLineDashOffset: 0, strokeLineDash: [1], fill: 'navy', fillStyle: 'cross-hatch', hachureGap: 11 },
+      { seed: 13, fill: '', strokeWidth: 3 },
+      { seed: 14, fill: 'orange', fillStyle: 'dots', hachureGap: 12, fillWeight: 3 },
+      { seed: 15, roughness: 0, fill: 'gray', fillStyle: 'zigzag-line', hachureGap: 8 },
+    ];
+    for (const shape of SHAPES) {
+      for (const args of SHAPE_ARGS[shape]) {
+        for (const options of variants) {
+          const entry = canvasCase({ shape, args, options });
+          if (entry && entry.length <= MAX_CANVAS_CASE) items.push(entry);
+        }
+      }
+    }
+    // Generator-level options, as in rough.canvas(canvas, { options }).
+    items.push(canvasCase({ shape: 'rectangle', args: [10, 10, 80, 60], config: { seed: 77, fill: 'red', strokeLineDash: [3, 3] } }));
+    const rng = inputRng(60221);
+    let tries = 0;
+    for (let n = 0; n < 150 && tries < 2000; tries++) {
+      const shape = SHAPES[Math.floor(rng() * SHAPES.length)];
+      const entry = canvasCase({ shape, args: randomShapeArgs(rng, shape), options: randomCanvasOptions(rng) });
+      if (entry && entry.length <= MAX_CANVAS_CASE) {
+        items.push(entry);
+        n++;
+      }
+    }
+    console.log(`canvas: ${items.length} cases`);
+    writeFixture('canvas', 'canvas_fixtures_test.mbt', { canvas_fixtures: items });
+  },
+});
+
 // --- svg: opsToPath number formatting -----------------------------------------
 
 generators.push({

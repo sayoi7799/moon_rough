@@ -94,3 +94,16 @@ pub fn ErrorStats::record(
 pub fn ErrorStats::summary(self : ErrorStats) -> String {
   "[error report] \{self.name}: \{self.compared} values, \{self.inexact} not bit-identical, max abs error \{self.max_abs}, max rel error \{self.max_rel}"
 }
+
+///|
+/// The IEEE-754 bit pattern of `x` as 16 lowercase hex digits, the inverse
+/// of `hex_to_double`.
+pub fn double_to_hex(x : Double) -> String {
+  let bits = x.reinterpret_as_uint64()
+  let buf = StringBuilder()
+  for i in 0..<16 {
+    let digit = ((bits >> (60 - 4 * i)) & 0xFUL).to_int()
+    buf.write_char("0123456789abcdef".get_char(digit).unwrap())
+  }
+  buf.to_string()
+}

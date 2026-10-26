@@ -1,0 +1,15 @@
+import {
+  "sayoi7799/moon_rough/core",
+  "sayoi7799/moon_rough/jsmath",
+  "sayoi7799/moon_rough/random",
+  "sayoi7799/moon_rough/path_data",
+}
+
+import {
+  "sayoi7799/moon_rough/internal/fixture",
+  "sayoi7799/moon_rough/internal/shapecase",
+} for "test"
+
+options(
+  targets: { "canvas_js.mbt": [ "js" ], "canvas_js_test.mbt": [ "js" ] },
+)

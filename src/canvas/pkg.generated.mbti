@@ -1,0 +1,75 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "sayoi7799/moon_rough/canvas"
+
+import {
+  "moonbitlang/core/debug",
+  "sayoi7799/moon_rough/core",
+  "sayoi7799/moon_rough/path_data",
+  "sayoi7799/moon_rough/random",
+}
+
+// Values
+pub fn[C : Canvas2D] draw(C, @core.Drawable) -> Unit
+
+// Errors
+
+// Types and methods
+pub(all) enum Event {
+  Save
+  Restore
+  BeginPath
+  MoveTo(Double, Double)
+  LineTo(Double, Double)
+  BezierCurveTo(Double, Double, Double, Double, Double, Double)
+  Stroke
+  Fill(String)
+  SetStrokeStyle(String)
+  SetFillStyle(String)
+  SetLineWidth(Double)
+  SetLineDash(Array[Double])
+  SetLineDashOffset(Double)
+} derive(Eq, @debug.Debug)
+pub fn Event::describe(Self) -> String
+
+pub struct Recorder {
+  events : Array[Event]
+}
+pub fn Recorder::new() -> Self
+pub impl Canvas2D for Recorder
+
+pub struct RoughCanvas[C] {
+  // private fields
+}
+pub fn[C : Canvas2D] RoughCanvas::arc(Self[C], Double, Double, Double, Double, Double, Double, closed? : Bool, options? : @core.Options) -> @core.Drawable
+pub fn[C : Canvas2D] RoughCanvas::circle(Self[C], Double, Double, Double, options? : @core.Options) -> @core.Drawable
+pub fn[C] RoughCanvas::context(Self[C]) -> C
+pub fn[C : Canvas2D] RoughCanvas::curve(Self[C], Array[(Double, Double)], options? : @core.Options) -> @core.Drawable
+pub fn[C : Canvas2D] RoughCanvas::curves(Self[C], Array[Array[(Double, Double)]], options? : @core.Options) -> @core.Drawable
+pub fn[C : Canvas2D] RoughCanvas::draw(Self[C], @core.Drawable) -> Unit
+pub fn[C : Canvas2D] RoughCanvas::ellipse(Self[C], Double, Double, Double, Double, options? : @core.Options) -> @core.Drawable
+pub fn[C] RoughCanvas::generator(Self[C]) -> @core.Generator
+pub fn[C : Canvas2D] RoughCanvas::line(Self[C], Double, Double, Double, Double, options? : @core.Options) -> @core.Drawable
+pub fn[C : Canvas2D] RoughCanvas::linear_path(Self[C], Array[(Double, Double)], options? : @core.Options) -> @core.Drawable
+pub fn[C] RoughCanvas::new(C, options? : @core.Options, source? : @random.RandomSource) -> Self[C]
+pub fn[C : Canvas2D] RoughCanvas::path(Self[C], StringView, options? : @core.Options) -> @core.Drawable raise @path_data.PathError
+pub fn[C : Canvas2D] RoughCanvas::polygon(Self[C], Array[(Double, Double)], options? : @core.Options) -> @core.Drawable
+pub fn[C : Canvas2D] RoughCanvas::rectangle(Self[C], Double, Double, Double, Double, options? : @core.Options) -> @core.Drawable
+
+// Type aliases
+
+// Traits
+pub(open) trait Canvas2D {
+  fn save(Self) -> Unit
+  fn restore(Self) -> Unit
+  fn begin_path(Self) -> Unit
+  fn move_to(Self, Double, Double) -> Unit
+  fn line_to(Self, Double, Double) -> Unit
+  fn bezier_curve_to(Self, Double, Double, Double, Double, Double, Double) -> Unit
+  fn stroke(Self) -> Unit
+  fn fill(Self, String) -> Unit
+  fn set_stroke_style(Self, String) -> Unit
+  fn set_fill_style(Self, String) -> Unit
+  fn set_line_width(Self, Double) -> Unit
+  fn set_line_dash(Self, Array[Double]) -> Unit
+  fn set_line_dash_offset(Self, Double) -> Unit
+}
