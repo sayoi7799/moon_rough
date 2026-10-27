@@ -72,7 +72,7 @@ fn main {
 
 | 普通版（diago） | 手绘版（moon_rough） |
 |---|---|
-| <img src="examples/diago_sketch/demo.svg" width="460"> | <img src="examples/diago_sketch/demo-sketch.svg" width="460"> |
+| <img src="https://raw.githubusercontent.com/sayoi7799/moon_rough/main/examples/diago_sketch/demo.svg" width="460"> | <img src="https://raw.githubusercontent.com/sayoi7799/moon_rough/main/examples/diago_sketch/demo-sketch.svg" width="460"> |
 
 ```moonbit
 let svg = @diago.compile(source)
