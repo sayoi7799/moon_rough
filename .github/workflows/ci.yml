@@ -236,6 +236,9 @@ jobs:
       - name: moon_rough and rough.js agree
         run: node examples/web/test.mjs
 
+      - name: The frames of the animations agree
+        run: node examples/web/animation_test.mjs
+
   # Early warning for the latest release; does not fail the workflow.
   latest:
     runs-on: ubuntu-latest
