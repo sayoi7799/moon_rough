@@ -218,6 +218,46 @@ pub fn draw(ctx : @canvas.JsContext, spec : String) -> String {
 }
 
 ///|
+/// Keeps the first `count` ops of the drawable, counting through its op sets
+/// in order: sets after that are dropped and the set in which the count runs
+/// out is cut. The drawable is changed in place.
+fn keep_first_ops(drawable : @core.Drawable, count : Int32) -> Unit {
+  let mut left = count
+  let mut kept = 0
+  for set in drawable.sets {
+    if left <= 0 {
+      break
+    }
+    if set.ops.length() > left {
+      set.ops.truncate(left)
+    }
+    left -= set.ops.length()
+    kept += 1
+  }
+  drawable.sets.truncate(kept)
+}
+
+///|
+/// Draws the first `count` ops of the shape described by `spec` (see
+/// `keep_first_ops`): the pen "writing" the shape, when `count` grows from
+/// 0 to the number of ops. Returns "" on success and a message otherwise.
+pub fn draw_prefix(
+  ctx : @canvas.JsContext,
+  spec : String,
+  count : Int32,
+) -> String {
+  try drawable_of(spec) catch {
+    Bad(message) => message
+  } noraise {
+    drawable => {
+      keep_first_ops(drawable, count)
+      @canvas.draw(ctx, drawable)
+      ""
+    }
+  }
+}
+
+///|
 fn op_json(op : @core.Op) -> Json {
   Json::object({
     "op": Json::string(op.name()),
