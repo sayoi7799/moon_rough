@@ -117,6 +117,13 @@ node examples/web/serve.mjs
 
 然后访问 http://localhost:8000/ 。第一条命令把 MoonBit 编译成 `examples/web/moon_rough_demo.js`，第二条启动一个不依赖任何包的静态服务器；不能直接双击打开 html，浏览器不允许从 `file://` 加载 ES 模块。换端口：`node examples/web/serve.mjs 8080`。不开浏览器也能检查：`node examples/web/test.mjs` 用 588 组描述对比 `draw` 和 `generate` 与官方 rough.js 的输出，需要先运行 `npm ci`（在 `scripts/` 里）。
 
+**动画页** `animation.html`（演示页右上的"看动画"，或直接访问 http://localhost:8000/animation.html ）有两种动画，都只用 rough.js 本来就有的行为，没有给 moon_rough 加新接口：
+
+- **抖动线条**：每一帧用 `seed + 帧号` 把同一幅图（矩形、椭圆、箭头、圆、一条路径，带五种填充）重画一遍，线条就像手绘动画一样抖动。
+- **描线**：只画 `Drawable` 的前 k 个 op，k 从 0 增长到全部，笔就一笔一笔写出图形。`draw_prefix` 在 `src/examples/web_demo` 里，不在发布包里。
+
+页面上每一帧都和官方 rough.js 对比（操作序列、坐标、像素），并累计显示。`node examples/web/animation_test.mjs` 在 Node 里做同样的事：180 帧抖动（3 种 roughness、60 个 seed、6 个图形）和 1,739 个前缀（每个图形的每一个 k），操作序列和 canvas 调用都必须和官方一致，现在的最大误差是 0。
+
 **页面上"完全一致"的含义。** 官方 rough.js 用浏览器自己的 `Math.sin / cos / tan`，moon_rough 用 fdlibm，和 Node 24 / x64 上的 rough.js 逐位相同（测试用的就是它）。但较新的浏览器的数学函数最后一位可能不同：我在 Chrome 152（x64 Windows）里把 9 种图形和 8 种填充设置（含不填充）、4 组参数共 288 种组合都试了一遍，191 种逐位一致，另外 97 种（主要是椭圆、圆、扇形，它们用 `sin` / `cos`）有数值差别，最大 1.14e-13，**没有任何一个像素不同，操作序列的结构也全部相同**。页面会如实显示是哪种情况，并给出你的浏览器里 `Math.tan(1e22)` 的值作为参考，不会写死"一致"。Safari 和 Firefox 我没有测过。
 
 ## 支持范围
@@ -131,7 +138,7 @@ node examples/web/serve.mjs
 | 给 diago 的流程图加手绘风格 | ✅ 示例模块 [`examples/diago_sketch`](examples/diago_sketch)，见下一节 |
 | Canvas 后端（`RoughCanvas`，js 目标） | ✅ `sayoi7799/moon_rough/canvas`，见下一节 |
 | 浏览器演示页：和官方 rough.js 并排对比 | ✅ [`examples/web`](examples/web)，见下一节 |
-| 动画 | ⏳ 后续阶段 |
+| 动画：抖动线条（每帧换 seed）、描线（逐步画出前 k 个 op） | ✅ [`examples/web/animation.html`](examples/web/animation.html)，每一帧和官方 rough.js 对比，见上一节 |
 
 ## 与 rough.js 的差异
 

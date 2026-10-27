@@ -10,7 +10,12 @@ supported_targets = "js"
 options(
   link: {
     "js": {
-      "exports": [ "draw:draw", "generate:generate", "version:version" ],
+      "exports": [
+        "draw:draw",
+        "draw_prefix:draw_prefix",
+        "generate:generate",
+        "version:version",
+      ],
       "format": "esm",
     },
   },

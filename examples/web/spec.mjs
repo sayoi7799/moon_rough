@@ -54,6 +54,44 @@ export function drawOfficial(roughLib, canvas, spec) {
   return withFixedRandom(() => drawShape(rc, shape, args, options));
 }
 
+/**
+ * The drawable the official generator makes for `spec`, without drawing it.
+ * `roughLib` is the `rough` object of rough.js.
+ */
+export function generateOfficial(roughLib, spec) {
+  const { shape, args, options } = spec;
+  return withFixedRandom(() => drawShape(roughLib.generator(), shape, args, options));
+}
+
+/**
+ * The first `count` ops of `sets` (rough.js' `drawable.sets`), counting
+ * through the sets in order: later sets are dropped and the set in which
+ * the count runs out is cut. The same rule as `draw_prefix` in
+ * src/examples/web_demo.
+ */
+export function prefixSets(sets, count) {
+  const result = [];
+  let left = count;
+  for (const set of sets) {
+    if (left <= 0) break;
+    const ops = set.ops.slice(0, left);
+    left -= ops.length;
+    result.push({ ...set, ops });
+  }
+  return result;
+}
+
+/**
+ * Draws the first `count` ops of what rough.js generates for `spec` on
+ * `canvas` and returns the full drawable. The generator and the drawing
+ * methods of rough.js take the same arguments, so one function serves both.
+ */
+export function drawOfficialPrefix(roughLib, canvas, spec, count) {
+  const drawable = generateOfficial(roughLib, spec);
+  roughLib.canvas(canvas).draw({ ...drawable, sets: prefixSets(drawable.sets, count) });
+  return drawable;
+}
+
 function drawShape(rc, shape, args, options) {
   switch (shape) {
     case 'line': return rc.line(...args, options);
