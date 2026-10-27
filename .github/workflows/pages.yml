@@ -51,8 +51,9 @@ jobs:
       - name: Collect the site
         run: |
           mkdir _site
-          cp examples/web/index.html examples/web/app.js examples/web/compare.mjs \
-            examples/web/spec.mjs examples/web/moon_rough_demo.js _site/
+          cp examples/web/index.html examples/web/app.js examples/web/style.css \
+            examples/web/animation.html examples/web/animation.js examples/web/scene.mjs \
+            examples/web/compare.mjs examples/web/spec.mjs examples/web/moon_rough_demo.js _site/
           cp -r examples/web/vendor _site/vendor
 
       - uses: actions/configure-pages@v5
