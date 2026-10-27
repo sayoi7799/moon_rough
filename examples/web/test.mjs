@@ -13,46 +13,13 @@ import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 
 import { compareSets } from './compare.mjs';
+import { recordingCanvas, sameEvents, tolerant } from './recording.mjs';
 import { FILL_STYLES, SHAPES, drawOfficial, makeSpec } from './spec.mjs';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const require = createRequire(import.meta.url);
 const rough = require(path.join(here, '..', '..', 'scripts', 'node_modules', 'roughjs'));
 const moon = await import(pathToFileURL(path.join(here, 'moon_rough_demo.js')).href);
-
-const tolerant = process.env.ALLOW_INEXACT === '1';
-
-/** A canvas whose context writes down every call and assignment. */
-function recordingCanvas() {
-  const events = [];
-  const methods = new Set(['save', 'restore', 'beginPath', 'moveTo', 'lineTo',
-    'bezierCurveTo', 'stroke', 'fill', 'setLineDash']);
-  const ctx = new Proxy({}, {
-    get(_, key) {
-      if (!methods.has(key)) throw new Error(`read of ctx.${String(key)}`);
-      return (...args) => events.push([key, ...args]);
-    },
-    set(_, key, value) {
-      events.push(['set', key, value]);
-      return true;
-    },
-  });
-  return { events, canvas: { getContext: () => ctx }, ctx };
-}
-
-function sameValue(a, b) {
-  if (typeof a === 'number' && typeof b === 'number') {
-    return tolerant ? Math.abs(a - b) <= 1e-9 : Object.is(a, b);
-  }
-  if (Array.isArray(a) && Array.isArray(b)) {
-    return a.length === b.length && a.every((x, i) => sameValue(x, b[i]));
-  }
-  return a === b;
-}
-
-function sameEvents(a, b) {
-  return a.length === b.length && a.every((e, i) => sameValue(e, b[i]));
-}
 
 // Descriptions to try: every shape, every fill style, several settings.
 const specs = [];
