@@ -213,6 +213,54 @@ CI 用同一版本的 toolchain（`0.10.16+b1a0e846e`）跑 check（不允许警
 
 版本变化见 [CHANGELOG.md](CHANGELOG.md)。
 
+## 性能
+
+用 `moon bench` 测 moon_rough，用同样的输入在 Node 上测官方 rough.js 4.6.6，对比生成速度。
+
+AMD Ryzen 9 7945HX with Radeon Graphics，32 线程，win32 x64；Node v24.20.0；moon 0.1.20261016 (1af328f 2026-10-16)
+
+| 项目 | rough.js（Node） | moon_rough js | wasm-gc | native |
+|---|---:|---:|---:|---:|
+| 10,000 个随机图形（生成） | 610 ms | 395 ms（1.5× 快） | 233 ms（2.6× 快） | 708 ms（1.2× 慢） |
+| 500 个 dots 填充的图形 | 371 ms | 786 ms（2.1× 慢） | 269 ms（1.4× 快） | 666 ms（1.8× 慢） |
+| 复杂路径：解析、绝对化、规范化 | 427 µs | 300 µs（1.4× 快） | 127 µs（3.4× 快） | 365 µs（1.2× 快） |
+| 复杂路径：曲线采样和简化 | 754 µs | 750 µs（持平） | 392 µs（1.9× 快） | 1.8 ms（2.4× 慢） |
+| 复杂路径：hachure 填充 | 2.7 ms | 2.2 ms（1.2× 快） | 1.4 ms（2.0× 快） | 3.8 ms（1.4× 慢） |
+| 复杂路径：solid 填充 | 1.4 ms | 1.3 ms（1.1× 快） | 655 µs（2.2× 快） | 2.5 ms（1.7× 慢） |
+| 复杂路径：cross-hatch 填充 | 4.0 ms | 3.2 ms（1.2× 快） | 2.1 ms（2.0× 快） | 5.2 ms（1.3× 慢） |
+| 10,000 个图形转 SVG 字符串 | 1.10 s | 2.28 s（2.1× 慢） | 2.36 s（2.2× 慢） | 2.63 s（2.4× 慢） |
+| 同上，保留两位小数 | 1.77 s | 4.06 s（2.3× 慢） | 3.72 s（2.1× 慢） | 12.12 s（6.9× 慢） |
+
+括号里是和 rough.js 比：「快」是 moon_rough 更快，「慢」是更慢。每个后端跑一整轮，我另外又完整跑了第二轮，两轮对应项目的平均值最大相差 17%，多数在 10% 以内，结论没有变化。
+
+**怎么测的。**
+
+- 只计时生成，不含画到 canvas 或转 SVG（最后两行除外，它们测的就是转 SVG）。输入在计时开始之前做好。
+- 两边用同一个确定性的随机数生成器，生成同样的 10,000 个图形（9 种图形，无填充或 6 种填充样式，随机 roughness、bowing、角度、间距、seed）和同一条 300 段的复杂路径（绝对和相对命令、平滑曲线、圆弧、多个闭合子路径）。官方 rough.js 对这些输入生成的 op 数量和所有数值之和，和 moon_rough 的逐位相同（`src/perf/checksum_test.mbt`，预期值由 `scripts/gen_fixtures.mjs` 生成），所以比的是同样的工作。
+- moon_rough 用 `moon bench --release`，每个基准是 10 批，每批至少 100 ms。Node 的脚本照同样的方法计时：预热后把批次调到至少 100 ms，取 10 批。dots 填充只测 500 个图形，因为每个图形有成百上千个点。
+- dots 填充的点位置来自没有种子的 `Math.random()`，两边画出的点不同，所以它不在校验和里（校验和里它用同一个固定序列）；这一行只比时间。
+- SVG 那两行：官方的 `RoughSVG` 需要 DOM，Node 里没有，所以 Node 一侧用 `opsToPath` 加字符串拼接写了一个输出相同字符串的版本（两边字符串的总长度相同，也在校验里）。
+
+**这些数字能说明什么，不能说明什么。** 它们来自一台机器、一次部署，说明的是这个实现在这台机器上相对 rough.js 的位置，不是 MoonBit 和 JavaScript 的一般比较：Node 有即时编译和预热，wasm-gc 在 `moon` 自带的运行时里跑，native 是 `cl /O2` 编译的。换一台机器、换一个版本，倍数会变。
+
+**明显偏慢的地方和原因。** 目前没有做任何优化。用一组小测量把偏慢的项目拆开（同样的输入，Node / js / wasm-gc / native），能确认的是：
+
+- **三角函数（dots 填充、椭圆、圆、圆弧）。** 1000 次 `sin` 加 `cos`：20 µs / 169 µs / 24 µs / 101 µs。为了在所有环境下得到同样的结果，moon_rough 自带了 fdlibm 的实现，而不是调用宿主的 `Math`。在 js 目标上，生成的 JS 里 `UInt64` 是用 `BigInt` 实现的，fdlibm 每次取浮点数的高 32 位都要走一遍；每次调用还要分配一个小数组。10,000 个椭圆：33 ms / 49 ms / 14 ms / 52 ms。
+- **SVG 输出。** 其中的 `escape_attribute` 逐字符处理整段路径数据（每个图形平均 16 KB），对全部 op set 做一遍：26 ms / 987 ms / 520 ms / 412 ms，在 js 上占 SVG 输出时间的约四成。保留两位小数的 `to_fixed` 为了和 JavaScript 的 `toFixed` 完全一致，用大整数精确实现：对 140 万个数 96 ms / 197 ms / 263 ms / 1.35 s，这是 native 上这一行慢 6.9 倍的主要原因。`ops_to_path`：0.97 s / 1.07 s / 1.48 s / 2.0 s。
+- **native 整体偏慢。** 大多数项目比 rough.js 慢 1.2 到 2.4 倍。release 构建用 `cl /O2 /MT`，并且定义了 `MOONBIT_ALLOCATOR_SYSTEM`（用系统的 `malloc`），而代码里有大量小对象（点、op、数组）。这是我对原因的判断，没有换分配器验证过。
+
+重新生成这张表（需要 MoonBit 工具链，先在 `scripts/` 里运行 `npm ci`，约 7 分钟，期间不要做别的事）：
+
+```bash
+node scripts/bench.mjs
+```
+
+也可以只看 moon_rough 一侧，例如 wasm-gc：
+
+```bash
+moon bench -p sayoi7799/moon_rough/perf --target wasm-gc --release
+```
+
 ## 重新生成 fixtures
 
 wasm-gc 后端不能读文件，所以 fixtures 生成为 `.mbt` 测试文件，放在被测包旁边（`src/*/…_fixtures_test.mbt`）。双精度数按 IEEE-754 的 16 位十六进制位模式存储，不经过任何十进制解析。

@@ -6,6 +6,7 @@
 
 ### 新增
 
+- 性能测试：`src/perf` 用 `moon bench` 测 10,000 个随机图形、dots 填充、复杂 SVG 路径的解析、采样、三种填充，以及转 SVG 字符串；`scripts/bench_roughjs.mjs` 用官方 rough.js 在 Node 上测同样的工作，`scripts/bench.mjs` 汇总成表格，写进 README 的「性能」一节。两边的输入由同一个确定性生成器产生，官方 rough.js 对它们生成的 op 数量和所有数值之和在 js、wasm-gc、native 上都和 moon_rough 逐位相同（等于一个 1 万图形的对照测试）。
 - `canvas` 包：rough.js 的 `RoughCanvas`。`draw(ctx, drawable)` 和 `RoughCanvas[C]` 写在 `Canvas2D` trait 上，所有目标都能编译；`JsContext` 是 js 目标上对 `CanvasRenderingContext2D` 的绑定（`extern "js"`），`Recorder` 记录调用。预期值来自官方 rough.js：616 个 Drawable、40,147 次 canvas 调用，顺序和数字都一致。wasm-gc 暂无绑定。
 - 浏览器演示页 `examples/web`：左边调参数，右边并排显示 moon_rough 和官方 rough.js 4.6.6，实时对比操作序列、坐标和像素；附本地服务器、构建脚本和 Node 里的对比测试（588 组描述、940 万个数值、172 万次 canvas 调用，在 Node 24 上最大误差 0）。浏览器自己的 `Math` 函数可能让数值差到 1e-13 量级，页面会如实显示。
 - `examples/diago_sketch`：给 diago 的 SVG 加手绘风格的示例模块。替换形状、箭头和连线的几何，其余原样保留；输出只取决于输入、seed 和 roughness。附同一张 D2 图的普通版和手绘版 SVG，CI 在三个后端上逐字节比对。它是独立模块，不在发布包里。

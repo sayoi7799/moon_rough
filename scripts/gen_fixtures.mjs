@@ -1067,6 +1067,71 @@ generators.push({
   },
 });
 
+// --- bench: what the official rough.js makes of the benchmark inputs ---------
+
+const benchCases = await import('./bench_cases.mjs');
+
+/** The sizes and seeds of the benchmark inputs; src/bench/cases.mbt repeats them. */
+export const BENCH = { shapes: 10000, shapeSeed: 1, dots: 500, dotsSeed: 2, segments: 300, pathSeed: 11 };
+
+generators.push({
+  name: 'bench',
+  run() {
+    const items = [];
+    const drawables = (cases) => {
+      const gen = rough.generator();
+      return cases.map((c) => benchCases.generate(gen, c));
+    };
+    const record = (name, drawablesList) => {
+      const { sets, ops, sum } = benchCases.checksum(drawablesList);
+      items.push(`${name}|${sets}|${ops}|${hex(sum)}`);
+    };
+
+    record('random_shapes', drawables(benchCases.randomCases(BENCH.shapes, BENCH.shapeSeed)));
+    record('dots', drawables(benchCases.randomCases(BENCH.dots, BENCH.dotsSeed, true)));
+
+    const d = benchCases.complexPath(BENCH.segments, BENCH.pathSeed);
+    const { parsePath, absolutize, normalize } = pathDataParser;
+    const segments = normalize(absolutize(parsePath(d)));
+    let values = 0;
+    let sum = 0;
+    for (const s of segments) for (const x of s.data) { values++; sum += x; }
+    items.push(`parse|${segments.length}|${values}|${hex(sum)}`);
+
+    const sets = pointsOnPath(d, 1, 1);
+    let points = 0;
+    let psum = 0;
+    for (const set of sets) for (const p of set) { points++; psum += p[0] + p[1]; }
+    items.push(`points_on_path|${sets.length}|${points}|${hex(psum)}`);
+
+    const gen = rough.generator();
+    for (const fillStyle of ['hachure', 'solid', 'cross-hatch']) {
+      record(`path_${fillStyle}`, [gen.path(d, { seed: 1, fill: '#e76f51', fillStyle, hachureGap: 8 })]);
+    }
+    // SVG output of the random shapes, with and without rounding: the total
+    // length of the strings both sides write.
+    for (const digits of [undefined, 2]) {
+      const g = rough.generator();
+      const cases = benchCases.randomCases(BENCH.shapes, BENCH.shapeSeed).map((c) => (
+        digits === undefined ? c : { ...c, options: { ...c.options, fixedDecimalPlaceDigits: digits } }));
+      let length = 0;
+      for (const c of cases) length += benchCases.drawableToSvg(g, benchCases.generate(g, c), digits).length;
+      items.push();
+    }
+    // SVG output of the random shapes, with and without rounding: the total
+    // length of the strings both sides write.
+    for (const digits of [undefined, 2]) {
+      const g = rough.generator();
+      const cases = benchCases.randomCases(BENCH.shapes, BENCH.shapeSeed).map((c) => (
+        digits === undefined ? c : { ...c, options: { ...c.options, fixedDecimalPlaceDigits: digits } }));
+      let length = 0;
+      for (const c of cases) length += benchCases.drawableToSvg(g, benchCases.generate(g, c), digits).length;
+      items.push(`svg_${digits === undefined ? 'plain' : 'fixed2'}|${length}|0|${hex(0)}`);
+    }
+    writeFixture('perf', 'perf_fixtures_test.mbt', { perf_fixtures: items });
+  },
+});
+
 // --- svg: opsToPath number formatting -----------------------------------------
 
 generators.push({
