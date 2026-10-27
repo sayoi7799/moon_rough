@@ -92,7 +92,7 @@ function table(data) {
     const cells = TARGETS.map((target) => {
       const r = data[target][key];
       const ratio = base.mean / r.mean; // > 1: faster than rough.js
-      const text = ratio >= 1 ? `${ratio.toFixed(1)}× 快` : `${(1 / ratio).toFixed(1)}× 慢`;
+      const text = Math.abs(ratio - 1) < 0.03 ? '持平' : ratio >= 1 ? `${ratio.toFixed(1)}× 快` : `${(1 / ratio).toFixed(1)}× 慢`;
       return `${format(r.mean)}（${text}）`;
     });
     lines.push(`| ${label} | ${format(base.mean)} | ${cells.join(' | ')} |`);
