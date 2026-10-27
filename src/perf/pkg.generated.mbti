@@ -1,0 +1,55 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "sayoi7799/moon_rough/perf"
+
+import {
+  "sayoi7799/moon_rough/core",
+}
+
+// Values
+pub const DOTS : Int32 = 500
+
+pub const DOTS_SEED : Int32 = 2
+
+pub const PATH_SEED : Int32 = 11
+
+pub const SEGMENTS : Int32 = 300
+
+pub const SHAPES : Int32 = 10000
+
+pub const SHAPE_SEED : Int32 = 1
+
+pub fn checksum(Array[@core.Drawable]) -> Checksum
+
+pub fn complex_path(Int32, Int32) -> String
+
+pub fn random_case(Rng, Bool, Int32?) -> Case
+
+pub fn random_cases(Int32, Int32, dots? : Bool, fixed_digits? : Int32) -> Array[Case]
+
+// Errors
+
+// Types and methods
+pub struct Case {
+  shape : String
+  nums : Array[Double]
+  points : Array[(Double, Double)]
+  d : String
+  options : @core.Options
+}
+pub fn Case::generate(Self, @core.Generator) -> @core.Drawable
+
+pub struct Checksum {
+  sets : Int32
+  ops : Int32
+  sum : Double
+}
+
+pub struct Rng {
+  // private fields
+}
+pub fn Rng::new(Int32) -> Self
+pub fn Rng::next(Self) -> Double
+
+// Type aliases
+
+// Traits
