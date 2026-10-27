@@ -4,7 +4,7 @@
 
 [rough.js](https://github.com/rough-stuff/rough) 4.6.6 的 MoonBit 移植：把线条、矩形、椭圆、多边形、曲线和 SVG 路径画成手绘草图风格。
 
-![gallery](gallery.svg)
+![gallery](https://raw.githubusercontent.com/sayoi7799/moon_rough/main/gallery.svg)
 
 （上图由 `moon run src/examples/gallery > gallery.svg` 生成，js / wasm-gc / native 三个后端输出的文件逐字节相同。）
 
@@ -68,18 +68,18 @@ fn main {
 
 ## 给 diago 的流程图加手绘风格
 
-[diago](https://github.com/moonbit-community/diago) 能把 D2 文本画成流程图，但它自己的手绘（`sketch`）模式还没有实现。[`examples/diago_sketch`](examples/diago_sketch) 是一个独立的小模块：先让 diago 照常生成 SVG，再把形状、连线和箭头的几何换成 moon_rough 的手绘线条，文字、颜色、主题和深色模式不变。
+[diago](https://github.com/moonbit-community/diago) 能把 D2 文本画成流程图，但它自己的手绘（`sketch`）模式还没有实现。[`examples/diago_sketch`](https://github.com/sayoi7799/moon_rough/tree/main/examples/diago_sketch) 是一个独立的小模块：先让 diago 照常生成 SVG，再把形状、连线和箭头的几何换成 moon_rough 的手绘线条，文字、颜色、主题和深色模式不变。
 
 | 普通版（diago） | 手绘版（moon_rough） |
 |---|---|
-| <img src="examples/diago_sketch/demo.svg" width="460"> | <img src="examples/diago_sketch/demo-sketch.svg" width="460"> |
+| <img src="https://raw.githubusercontent.com/sayoi7799/moon_rough/main/examples/diago_sketch/demo.svg" width="460"> | <img src="https://raw.githubusercontent.com/sayoi7799/moon_rough/main/examples/diago_sketch/demo-sketch.svg" width="460"> |
 
 ```moonbit
 let svg = @diago.compile(source)
 let sketch = @diago_sketch.sketchify(svg, seed=7)
 ```
 
-同样的输入和 seed，输出逐字节相同，js、wasm-gc、native 上都一样（CI 逐一比对提交的 SVG）。它不是发布模块的一部分，因为要依赖 diago 和它的一批依赖；详细说明和限制见 [它的 README](examples/diago_sketch/README.md)。
+同样的输入和 seed，输出逐字节相同，js、wasm-gc、native 上都一样（CI 逐一比对提交的 SVG）。它不是发布模块的一部分，因为要依赖 diago 和它的一批依赖；详细说明和限制见 [它的 README](https://github.com/sayoi7799/moon_rough/blob/main/examples/diago_sketch/README.md)。
 
 ## Canvas 后端和浏览器演示页
 
@@ -103,7 +103,7 @@ pub fn paint(ctx : @canvas.JsContext) -> Unit {
 - **wasm-gc 和 native 上没有真正的 canvas 绑定。** wasm-gc 需要宿主提供导入函数，目前没做；trait 让以后补一个实现很容易。
 - **测试**：预期值来自官方 rough.js。`scripts/gen_fixtures.mjs` 用一个会记录每次方法调用和属性赋值（并且禁止读取任何属性）的假 canvas 运行真正的 `rough.canvas()`，616 个 Drawable、40,147 次调用，顺序和每个数字（按位）都和 MoonBit 一致，三个后端都是。
 
-**浏览器演示页** [`examples/web`](examples/web)：左边调参数（图形、填充样式、roughness、bowing、hachureAngle、hachureGap、strokeWidth、seed、颜色），右边并排显示 moon_rough 和官方 rough.js 4.6.6 画的同一张图，页面实时对比三项：操作序列、每个坐标、每个像素。
+**浏览器演示页** [`examples/web`](https://github.com/sayoi7799/moon_rough/tree/main/examples/web)：左边调参数（图形、填充样式、roughness、bowing、hachureAngle、hachureGap、strokeWidth、seed、颜色），右边并排显示 moon_rough 和官方 rough.js 4.6.6 画的同一张图，页面实时对比三项：操作序列、每个坐标、每个像素。
 
 在本地打开（需要 MoonBit 工具链和 Node.js 18 以上）：
 
@@ -135,10 +135,12 @@ node examples/web/serve.mjs
 | 选项：maxRandomnessOffset、roughness、bowing、stroke、strokeWidth、curveFitting、curveTightness、curveStepCount、fill、fillStyle、fillWeight、hachureAngle、hachureGap、simplification、dashOffset、dashGap、zigzagOffset、seed、strokeLineDash、strokeLineDashOffset、fillLineDash、fillLineDashOffset、disableMultiStroke、disableMultiStrokeFill、preserveVertices、fixedDecimalPlaceDigits、fillShapeRoughnessGain | ✅ 全部（默认值照 `generator.ts`） |
 | SVG 路径：M L H V C S Q T A Z 及其相对形式、隐式重复、紧凑数字写法、弧线转三次贝塞尔 | ✅ |
 | 输出：Drawable（OpSet 列表）、SVG 字符串、`opsToPath`、`toPaths` | ✅ |
-| 给 diago 的流程图加手绘风格 | ✅ 示例模块 [`examples/diago_sketch`](examples/diago_sketch)，见下一节 |
-| Canvas 后端（`RoughCanvas`，js 目标） | ✅ `sayoi7799/moon_rough/canvas`，见下一节 |
-| 浏览器演示页：和官方 rough.js 并排对比 | ✅ [`examples/web`](examples/web)，见下一节 |
-| 动画：抖动线条（每帧换 seed）、描线（逐步画出前 k 个 op） | ✅ [`examples/web/animation.html`](examples/web/animation.html)，每一帧和官方 rough.js 对比，见上一节 |
+| 给 diago 的流程图加手绘风格 | ✅ 示例模块 [`examples/diago_sketch`](https://github.com/sayoi7799/moon_rough/tree/main/examples/diago_sketch)，见上文「给 diago 的流程图加手绘风格」 |
+| Canvas 后端（`RoughCanvas`） | ✅ `sayoi7799/moon_rough/canvas`：绘制逻辑在所有目标上编译，js 目标有真正的 canvas 绑定，wasm-gc 和 native 暂无（见上文「Canvas 后端和浏览器演示页」） |
+| 浏览器演示页：和官方 rough.js 并排对比 | ✅ [`examples/web`](https://github.com/sayoi7799/moon_rough/tree/main/examples/web)，见上文「Canvas 后端和浏览器演示页」 |
+| 动画：抖动线条（每帧换 seed）、描线（逐步画出前 k 个 op） | ✅ [`examples/web/animation.html`](https://github.com/sayoi7799/moon_rough/blob/main/examples/web/animation.html)，每一帧和官方 rough.js 对比，见上文 |
+| 性能测试：和 Node 上的 rough.js 对比 | ✅ `src/perf`，结果见下文「性能」 |
+| 答辩材料 | ✅ [`docs/defense.md`](https://github.com/sayoi7799/moon_rough/blob/main/docs/defense.md) |
 
 ## 与 rough.js 的差异
 
@@ -218,7 +220,7 @@ CI 用同一版本的 toolchain（`0.10.16+b1a0e846e`）跑 check（不允许警
 - 在 macOS（arm64）和 Windows 上跑同样的测试，暂时不阻塞，因为 clang 可能把 `a * b + c` 合并成 FMA，需要先看一轮结果；
 - 用最新版 MoonBit 跑 check 和测试，提前发现兼容性问题，同样不阻塞。
 
-版本变化见 [CHANGELOG.md](CHANGELOG.md)。
+版本变化见 [CHANGELOG.md](https://github.com/sayoi7799/moon_rough/blob/main/CHANGELOG.md)。
 
 ## 性能
 
@@ -284,7 +286,7 @@ cd scripts && npm ci && npm run gen
 
 ## 移植来源和许可证
 
-本项目以 MIT 许可证发布（见 [LICENSE](LICENSE)）。移植自以下项目，版权声明和许可证全文见 [THIRD_PARTY_LICENSES](THIRD_PARTY_LICENSES)：
+本项目以 MIT 许可证发布（见 [LICENSE](https://github.com/sayoi7799/moon_rough/blob/main/LICENSE)）。移植自以下项目，版权声明和许可证全文见 [THIRD_PARTY_LICENSES](https://github.com/sayoi7799/moon_rough/blob/main/THIRD_PARTY_LICENSES)：
 
 | 项目 | 版本 | 许可证 | 作者 |
 |---|---|---|---|

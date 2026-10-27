@@ -2,7 +2,9 @@
 
 版本号遵循语义化版本。0.x 阶段公开接口可能调整，调整会写在这里。
 
-## 未发布
+## 0.2.0（2026-10-27）
+
+在 0.1.0 的基础上加了 Canvas 后端，另有浏览器演示页、动画、diago 示例和性能测试。发布包里已有的接口没有变化，0.1.0 的输出在 0.2.0 里逐位不变。
 
 ### 新增
 
@@ -11,6 +13,11 @@
 - `canvas` 包：rough.js 的 `RoughCanvas`。`draw(ctx, drawable)` 和 `RoughCanvas[C]` 写在 `Canvas2D` trait 上，所有目标都能编译；`JsContext` 是 js 目标上对 `CanvasRenderingContext2D` 的绑定（`extern "js"`），`Recorder` 记录调用。预期值来自官方 rough.js：616 个 Drawable、40,147 次 canvas 调用，顺序和数字都一致。wasm-gc 暂无绑定。
 - 浏览器演示页 `examples/web`：左边调参数，右边并排显示 moon_rough 和官方 rough.js 4.6.6，实时对比操作序列、坐标和像素；附本地服务器、构建脚本和 Node 里的对比测试（588 组描述、940 万个数值、172 万次 canvas 调用，在 Node 24 上最大误差 0）。浏览器自己的 `Math` 函数可能让数值差到 1e-13 量级，页面会如实显示。
 - `examples/diago_sketch`：给 diago 的 SVG 加手绘风格的示例模块。替换形状、箭头和连线的几何，其余原样保留；输出只取决于输入、seed 和 roughness。附同一张 D2 图的普通版和手绘版 SVG，CI 在三个后端上逐字节比对。它是独立模块，不在发布包里。
+
+### 文档
+
+- README 的「支持范围」表更新到当前状态；指向仓库文件的链接和图片改成绝对地址，在 mooncakes.io 上也能打开。
+- `docs/defense.md`：为什么能逐位一致、测试方法、和 rough.js 的差异、和 diago 的对接。
 
 ### 工程
 
@@ -46,7 +53,7 @@
 
 - rough.js 会死循环或抛异常的输入，这里会正常结束或返回错误，详见 README 的「与 rough.js 的差异」。
 - 默认的 `Math.random()` 替代是固定种子的序列，每次运行起点相同。
-- `RoughSVG` 改为输出字符串。0.1.0 不含 Canvas 后端，见上面「未发布」。
+- `RoughSVG` 改为输出字符串。0.1.0 不含 Canvas 后端，见 0.2.0。
 
 ### 工程
 
