@@ -6,6 +6,7 @@
 
 ### 新增
 
+- 动画：`examples/web/animation.html` 有两种动画，抖动线条（每帧用 `seed + 帧号` 重画）和描线（只画前 k 个 op，`draw_prefix` 在 `src/examples/web_demo`，不进发布包），页面上每一帧都和官方 rough.js 对比。`examples/web/animation_test.mjs` 在 Node 里对比 180 帧抖动和 1,739 个前缀，操作序列和 canvas 调用与官方一致，最大误差 0。没有改动发布包里的任何接口。
 - 性能测试：`src/perf` 用 `moon bench` 测 10,000 个随机图形、dots 填充、复杂 SVG 路径的解析、采样、三种填充，以及转 SVG 字符串；`scripts/bench_roughjs.mjs` 用官方 rough.js 在 Node 上测同样的工作，`scripts/bench.mjs` 汇总成表格，写进 README 的「性能」一节。两边的输入由同一个确定性生成器产生，官方 rough.js 对它们生成的 op 数量和所有数值之和在 js、wasm-gc、native 上都和 moon_rough 逐位相同（等于一个 1 万图形的对照测试）。
 - `canvas` 包：rough.js 的 `RoughCanvas`。`draw(ctx, drawable)` 和 `RoughCanvas[C]` 写在 `Canvas2D` trait 上，所有目标都能编译；`JsContext` 是 js 目标上对 `CanvasRenderingContext2D` 的绑定（`extern "js"`），`Recorder` 记录调用。预期值来自官方 rough.js：616 个 Drawable、40,147 次 canvas 调用，顺序和数字都一致。wasm-gc 暂无绑定。
 - 浏览器演示页 `examples/web`：左边调参数，右边并排显示 moon_rough 和官方 rough.js 4.6.6，实时对比操作序列、坐标和像素；附本地服务器、构建脚本和 Node 里的对比测试（588 组描述、940 万个数值、172 万次 canvas 调用，在 Node 24 上最大误差 0）。浏览器自己的 `Math` 函数可能让数值差到 1e-13 量级，页面会如实显示。
@@ -14,7 +15,7 @@
 ### 工程
 
 - `.moonignore`：把本地草稿、`node_modules`、`examples/` 和演示页的 MoonBit 包排除出发布包。
-- CI 新增 `web` 任务（构建演示页，跑 Node 里的对比测试，检查随页面分发的 rough.js 和 npm 包逐字节相同）和 GitHub Pages 的部署 workflow。
+- CI 新增 `web` 任务（构建演示页，跑 Node 里的对比测试和动画测试，检查随页面分发的 rough.js 和 npm 包逐字节相同）和 GitHub Pages 的部署 workflow。
 
 ## 0.1.0（2026-10-25）
 
