@@ -14,6 +14,38 @@ rough.js 是 Excalidraw、Mermaid 等工具手绘风格的底层库。MoonBit �
 
 moon_rough 是**移植**，不是重新实现。目标是：**给定相同的 seed 和参数，生成和 rough.js 一样的图形。**实际结果比这更进一步：在下面的所有对照测试里，MoonBit 和 rough.js 的输出逐位相同，最大误差为 0。
 
+## 安装
+
+需要 MoonBit 工具链，moonc 0.10.16 或更新（CI 用的是 `0.10.16+b1a0e846e`），`moon version --all` 可以看当前版本。在你自己的项目里：
+
+```bash
+moon add sayoi7799/moon_rough
+```
+
+这条命令从 [mooncakes.io](https://mooncakes.io/docs/sayoi7799/moon_rough) 取最新版本，并把依赖写进 `moon.mod`（例如 `"sayoi7799/moon_rough@0.2.0"`）。然后在要用它的包的 `moon.pkg` 里导入，代码里就可以写 `@moon_rough`：
+
+```moonbit
+import {
+  "sayoi7799/moon_rough",
+}
+```
+
+子包单独导入，例如 Canvas 后端是 `"sayoi7799/moon_rough/canvas"`（`@canvas`）。js、wasm-gc、native 三个后端都能用，下面的"用法"在这三个后端上我都在一个新建的空模块里跑过。
+
+想从源码试用：克隆仓库，在克隆出来的目录里运行测试和示例。
+
+```bash
+git clone https://github.com/sayoi7799/moon_rough.git
+```
+
+```bash
+moon test --target js
+```
+
+```bash
+moon run src/examples/gallery > gallery.svg
+```
+
 ## 用法
 
 ```moonbit
