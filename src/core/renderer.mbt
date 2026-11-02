@@ -611,6 +611,10 @@ fn curve_ops(points : Array[Point], o : ResolvedOptions) -> Array[Op] {
         points[2].y,
       ),
     )
+  } else if len == 2 && o.roughjs_464 {
+    ops.append(
+      double_line(points[0].x, points[0].y, points[1].x, points[1].y, o),
+    )
   } else if len == 2 {
     ops.append(
       line_ops(
