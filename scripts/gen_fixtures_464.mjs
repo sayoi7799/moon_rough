@@ -61,7 +61,6 @@ function entry(shape, args, o) {
   const sets = d.sets
     .map((s) => `${code[s.type]}:${s.ops.map((op) => `${opCode[op.op]} ${op.data.map(hex).join(' ')}`).join(',')}`)
     .join(';');
-  const argHex = args.flat(2).map(hex).join(' ');
   return [shape, argHex, encodeOptions(o), '-', 'ok', d.shape, sets, seeded, fallback].join('|');
 }
 
