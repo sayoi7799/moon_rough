@@ -270,8 +270,20 @@ pub fn Generator::polygon(
   points : Array[(Double, Double)],
   options? : Options,
 ) -> Drawable {
+  self.polygon_points(to_points(points), options?)
+}
+
+///|
+/// Like `polygon`, but draws with the given points themselves. rough.js's
+/// pattern fills rotate a polygon's points in place and back again, which leaves
+/// rounding noise in the caller's array; this does the same to `points`, so code
+/// that goes on using them (Excalidraw does) sees the same values.
+pub fn Generator::polygon_points(
+  self : Generator,
+  points : Array[Point],
+  options? : Options,
+) -> Drawable {
   let o = self.resolve(options)
-  let points = to_points(points)
   let paths = []
   let outline = linear_path(points, true, o)
   if has_fill(o) {
