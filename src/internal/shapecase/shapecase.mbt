@@ -50,6 +50,7 @@ pub fn decode_options(s : StringView) -> @core.Options? raise {
       "disableMultiStroke" => { ..o, disable_multi_stroke: Some(b), }
       "disableMultiStrokeFill" => { ..o, disable_multi_stroke_fill: Some(b), }
       "preserveVertices" => { ..o, preserve_vertices: Some(b), }
+      "roughjs464" => { ..o, roughjs_464: Some(b), }
       "fixedDecimalPlaceDigits" =>
         { ..o, fixed_decimal_place_digits: Some(@string.parse_int(value)), }
       "fillShapeRoughnessGain" => { ..o, fill_shape_roughness_gain: Some(n()), }

@@ -7,7 +7,8 @@
     "gen": "node gen_fixtures.mjs"
   },
   "dependencies": {
-    "roughjs": "4.6.6"
+    "roughjs": "4.6.6",
+    "roughjs464": "npm:roughjs@4.6.4"
   },
   "overrides": {
     "hachure-fill": "0.5.2",

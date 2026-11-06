@@ -97,8 +97,9 @@ pub(all) struct Options {
   preserve_vertices : Bool?
   fixed_decimal_place_digits : Int32?
   fill_shape_roughness_gain : Double?
+  roughjs_464 : Bool?
 }
-pub fn Options::new(max_randomness_offset? : Double, roughness? : Double, bowing? : Double, stroke? : String, stroke_width? : Double, curve_fitting? : Double, curve_tightness? : Double, curve_step_count? : Double, fill? : String, fill_style? : FillStyle, fill_weight? : Double, hachure_angle? : Double, hachure_gap? : Double, simplification? : Double, dash_offset? : Double, dash_gap? : Double, zigzag_offset? : Double, seed? : Int32, stroke_line_dash? : Array[Double], stroke_line_dash_offset? : Double, fill_line_dash? : Array[Double], fill_line_dash_offset? : Double, disable_multi_stroke? : Bool, disable_multi_stroke_fill? : Bool, preserve_vertices? : Bool, fixed_decimal_place_digits? : Int32, fill_shape_roughness_gain? : Double) -> Self
+pub fn Options::new(max_randomness_offset? : Double, roughness? : Double, bowing? : Double, stroke? : String, stroke_width? : Double, curve_fitting? : Double, curve_tightness? : Double, curve_step_count? : Double, fill? : String, fill_style? : FillStyle, fill_weight? : Double, hachure_angle? : Double, hachure_gap? : Double, simplification? : Double, dash_offset? : Double, dash_gap? : Double, zigzag_offset? : Double, seed? : Int32, stroke_line_dash? : Array[Double], stroke_line_dash_offset? : Double, fill_line_dash? : Array[Double], fill_line_dash_offset? : Double, disable_multi_stroke? : Bool, disable_multi_stroke_fill? : Bool, preserve_vertices? : Bool, fixed_decimal_place_digits? : Int32, fill_shape_roughness_gain? : Double, roughjs_464? : Bool) -> Self
 
 pub(all) struct PathInfo {
   d : String
@@ -135,6 +136,7 @@ pub struct ResolvedOptions {
   preserve_vertices : Bool
   fixed_decimal_place_digits : Int32?
   fill_shape_roughness_gain : Double
+  roughjs_464 : Bool
   // private fields
 }
 pub fn ResolvedOptions::random_source(Self) -> @random.RandomSource

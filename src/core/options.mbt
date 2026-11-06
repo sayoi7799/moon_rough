@@ -73,6 +73,9 @@ pub(all) struct Options {
   preserve_vertices : Bool?
   fixed_decimal_place_digits : Int32?
   fill_shape_roughness_gain : Double?
+  /// Behave like rough.js 4.6.4 where it differs from 4.6.6. Excalidraw still
+  /// depends on 4.6.4. Defaults to false.
+  roughjs_464 : Bool?
 }
 
 ///|
@@ -106,6 +109,7 @@ pub fn Options::new(
   preserve_vertices? : Bool,
   fixed_decimal_place_digits? : Int32,
   fill_shape_roughness_gain? : Double,
+  roughjs_464? : Bool,
 ) -> Options {
   {
     max_randomness_offset,
@@ -135,6 +139,7 @@ pub fn Options::new(
     preserve_vertices,
     fixed_decimal_place_digits,
     fill_shape_roughness_gain,
+    roughjs_464,
   }
 }
 
@@ -174,6 +179,7 @@ pub struct ResolvedOptions {
   preserve_vertices : Bool
   fixed_decimal_place_digits : Int32?
   fill_shape_roughness_gain : Double
+  roughjs_464 : Bool
   priv mut randomizer : @random.Random?
   priv source : @random.RandomSource
 }
@@ -209,6 +215,7 @@ fn default_options(source : @random.RandomSource) -> ResolvedOptions {
     preserve_vertices: false,
     fixed_decimal_place_digits: None,
     fill_shape_roughness_gain: 0.8,
+    roughjs_464: false,
     randomizer: None,
     source,
   }
@@ -268,6 +275,7 @@ fn ResolvedOptions::merge(
     fill_shape_roughness_gain: options.fill_shape_roughness_gain.unwrap_or(
       base.fill_shape_roughness_gain,
     ),
+    roughjs_464: options.roughjs_464.unwrap_or(base.roughjs_464),
     randomizer: base.randomizer,
     source: base.source,
   }

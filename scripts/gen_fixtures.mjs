@@ -1163,6 +1163,19 @@ generators.push({
   },
 });
 
+// The fixtures of the `roughjs_464` option come from rough.js 4.6.4, not the 4.6.6
+// this script loads, so they have a script of their own. Run here, they are
+// regenerated and formatted with everything else.
+generators.push({
+  name: 'roughjs464',
+  run() {
+    execSync('node gen_fixtures_464.mjs', {
+      cwd: path.dirname(fileURLToPath(import.meta.url)),
+      stdio: 'inherit',
+    });
+  },
+});
+
 function main() {
   const only = process.argv.slice(2);
   for (const { name, run } of generators) {

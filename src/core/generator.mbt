@@ -212,7 +212,10 @@ fn Generator::curve_points(
   let o = self.resolve(options)
   let paths = []
   let outline = curve(points_list, o)
-  if has_fill(o) && o.fill != Some("none") {
+  // 4.6.4 only fills curves of at least 3 points.
+  let fillable = !o.roughjs_464 ||
+    (points_list.length() > 0 && points_list[0].length() >= 3)
+  if has_fill(o) && o.fill != Some("none") && fillable {
     if o.fill_style == Solid {
       let fill_shape = curve(points_list, {
         ..o,
@@ -230,7 +233,7 @@ fn Generator::curve_points(
       for points in points_list {
         if points.length() < 3 {
           poly_points.append(points)
-        } else if points.length() == 3 {
+        } else if points.length() == 3 && !o.roughjs_464 {
           let bezier = @curve.curve_to_bezier([
             points[0],
             points[0],

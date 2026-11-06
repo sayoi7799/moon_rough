@@ -193,7 +193,11 @@ fn polygon_hachure_lines(
   if gap < 0.0 {
     gap = o.stroke_width * 4.0
   }
-  gap = @jsmath.round(@jsmath.max(gap, 0.1))
+  // 4.6.5 started rounding the gap; 4.6.4 keeps it fractional.
+  gap = @jsmath.max(gap, 0.1)
+  if !o.roughjs_464 {
+    gap = @jsmath.round(gap)
+  }
   let mut skip_offset = 1.0
   if o.roughness >= 1.0 {
     // `(o.randomizer?.next() || Math.random()) > 0.7`: no randomizer is
