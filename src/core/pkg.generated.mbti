@@ -3,6 +3,7 @@ package "sayoi7799/moon_rough/core"
 
 import {
   "moonbitlang/core/debug",
+  "sayoi7799/moon_rough/geometry",
   "sayoi7799/moon_rough/path_data",
   "sayoi7799/moon_rough/random",
 }
@@ -46,6 +47,7 @@ pub fn Generator::new_seed(Self) -> Int32
 pub fn Generator::ops_to_path(Self, OpSet, fixed_decimals? : Int32) -> String
 pub fn Generator::path(Self, StringView, options? : Options) -> Drawable raise @path_data.PathError
 pub fn Generator::polygon(Self, Array[(Double, Double)], options? : Options) -> Drawable
+pub fn Generator::polygon_points(Self, Array[@geometry.Point], options? : Options) -> Drawable
 pub fn Generator::rectangle(Self, Double, Double, Double, Double, options? : Options) -> Drawable
 pub fn Generator::to_paths(Self, Drawable) -> Array[PathInfo]
 
